@@ -19,9 +19,9 @@ const buttonVariants = cva(
         ghost: 'hover:bg-surface-2 hover:text-foreground active:scale-[0.98]',
         link: 'text-primary underline-offset-4 hover:underline',
         brand:
-          'bg-gradient-brand text-white shadow-glow-sm hover:shadow-glow active:scale-[0.98] font-semibold',
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:scale-[0.98]',
         glass:
-          'glass text-foreground hover:bg-surface-3/60 active:scale-[0.98]',
+          'glass text-foreground hover:bg-surface-2 active:scale-[0.98]',
       },
       size: {
         default: 'h-9 px-4 py-2',

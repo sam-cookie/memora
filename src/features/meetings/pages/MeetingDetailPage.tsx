@@ -37,6 +37,7 @@ import {
   useToggleActionItem,
   useUpdateMeeting,
 } from '../hooks/useMeetingDetail'
+import { useExportPDF } from '../hooks/useExportPDF'
 import { EditMeetingDialog } from '../components/EditMeetingDialog'
 import { DeleteMeetingDialog } from '../components/DeleteMeetingDialog'
 import type {
@@ -325,6 +326,7 @@ export function MeetingDetailPage() {
   const { data: questions = [] } = useFollowUpQuestions(meetingId, isCompleted)
   const toggle = useToggleActionItem(meetingId)
   const update = useUpdateMeeting(meetingId)
+  const { exportPDF, isExporting } = useExportPDF()
 
   function handleExportMarkdown() {
     if (!meeting) return
@@ -387,9 +389,16 @@ export function MeetingDetailPage() {
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />
                 Export Markdown
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.print()}>
-                <Printer className="h-3.5 w-3.5 mr-1.5" />
-                Export PDF
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                onClick={() => void exportPDF({ meeting, actionItems, decisions, risks, questions })}
+              >
+                {isExporting
+                  ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  : <Printer className="h-3.5 w-3.5 mr-1.5" />}
+                {isExporting ? 'Exporting…' : 'Export PDF'}
               </Button>
             </>
           )}

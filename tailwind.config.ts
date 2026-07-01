@@ -89,6 +89,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       fontSize: {
@@ -100,10 +101,15 @@ const config: Config = {
         '128': '32rem',
       },
       boxShadow: {
-        'glow-sm': '0 0 10px -2px hsl(var(--primary) / 0.3)',
-        glow: '0 0 20px -4px hsl(var(--primary) / 0.4)',
-        'glow-lg': '0 0 40px -8px hsl(var(--primary) / 0.5)',
-        glass: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+        'card': '0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04)',
+        'card-md': '0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.04)',
+        'card-lg': '0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -4px rgba(0,0,0,0.04)',
+        'popover': '0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05)',
+        /* kept for backward-compat */
+        'glow-sm': '0 0 10px -2px hsl(var(--primary) / 0.2)',
+        glow: '0 0 20px -4px hsl(var(--primary) / 0.25)',
+        'glow-lg': '0 0 40px -8px hsl(var(--primary) / 0.3)',
+        glass: '0 8px 32px 0 rgba(0,0,0,0.12)',
         'inner-glow': 'inset 0 1px 0 rgba(255,255,255,0.06)',
       },
       backgroundImage: {

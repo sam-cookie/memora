@@ -17,7 +17,7 @@ interface ThemeProviderProps {
   defaultTheme?: Theme
 }
 
-export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProviderProps) {
   const [theme, setTheme] = useLocalStorage<Theme>('memora-theme', defaultTheme)
 
   const resolvedTheme: 'dark' | 'light' =

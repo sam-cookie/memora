@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { NewMeetingDialog } from '@/features/meetings/components/NewMeetingDialog'
 import { motion } from 'framer-motion'
 import {
   Mic,
   CheckCircle2,
-  Clock,
+  ListTodo,
   Plus,
   ArrowRight,
   Loader2,
@@ -75,21 +76,37 @@ const PRIORITY_VARIANT: Record<ActionItemPriority, 'secondary' | 'warning' | 'de
   critical: 'destructive',
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ─── Stat Card Design System ──────────────────────────────────────────────────
 
-interface StatCardProps {
+type CardColor = 'blue' | 'green' | 'amber'
+
+const COLOR_CONFIG = {
+  blue:  { iconBg: 'bg-blue-50 dark:bg-blue-950/40',    iconText: 'text-blue-600 dark:text-blue-400' },
+  green: { iconBg: 'bg-emerald-50 dark:bg-emerald-950/40', iconText: 'text-emerald-600 dark:text-emerald-400' },
+  amber: { iconBg: 'bg-amber-50 dark:bg-amber-950/40',  iconText: 'text-amber-600 dark:text-amber-400' },
+} as const
+
+interface CardConfig {
   icon: React.ElementType
+  color: CardColor
   value: number | undefined
   label: string
   sub: string
-  accentClass: string
+  trend?: string
   pulse?: boolean
   isLoading: boolean
   index: number
   onClick?: () => void
 }
 
-function StatCard({ icon: Icon, value, label, sub, accentClass, pulse, isLoading, index, onClick }: StatCardProps) {
+// ─── Stat Card: Hero Metric ───────────────────────────────────────────────────
+// Number dominates. Icon sits top-right as a soft accent.
+// Inspired by Linear / Apple Business.
+
+function StatCardHero({
+  icon: Icon, value, label, sub, color, pulse, isLoading, index, onClick,
+}: CardConfig) {
+  const { iconBg, iconText } = COLOR_CONFIG[color]
   const Wrapper = onClick ? 'button' : 'div'
 
   return (
@@ -100,54 +117,53 @@ function StatCard({ icon: Icon, value, label, sub, accentClass, pulse, isLoading
     >
       <Wrapper
         {...(onClick ? { type: 'button' as const, onClick } : {})}
-        className={cn(
-          'group w-full text-left',
-          onClick && 'cursor-pointer',
-        )}
+        className={cn('group block w-full text-left', onClick && 'cursor-pointer')}
       >
-        <Card className={cn(
-          'relative overflow-hidden p-6 transition-all duration-200',
-          onClick && 'hover:shadow-md hover:-translate-y-0.5 hover:border-border/80',
+        <div className={cn(
+          'bg-card border border-border rounded-2xl p-6 transition-all duration-200',
+          onClick && 'hover:shadow-card-md hover:-translate-y-px',
         )}>
-          {/* Subtle accent strip on top */}
-          <div className={cn('absolute inset-x-0 top-0 h-0.5', accentClass)} />
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', accentClass.replace('bg-', 'bg-').replace(/\/\d+$/, '/10'))}>
-                <Icon className={cn('h-4 w-4', accentClass.includes('emerald') ? 'text-emerald-600' : accentClass.includes('amber') ? 'text-amber-600' : 'text-primary')} />
+          {/* Metric + icon row */}
+          <div className="flex items-start justify-between mb-3">
+            {isLoading ? (
+              <Skeleton className="h-12 w-20" />
+            ) : (
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-[46px] font-bold leading-none tracking-tight tabular-nums text-foreground">
+                  {(value ?? 0).toLocaleString()}
+                </span>
+                {pulse && (
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-medium self-end pb-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    live
+                  </span>
+                )}
               </div>
-              {onClick && (
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              )}
-            </div>
-
-            <div>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tracking-tight text-foreground">
-                      {(value ?? 0).toLocaleString()}
-                    </span>
-                    {pulse && (value ?? 0) > 0 && (
-                      <span className="flex items-center gap-1 text-xs text-amber-500 font-medium">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        live
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm font-medium text-foreground/80">{label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-                </>
-              )}
+            )}
+            <div className={cn('h-9 w-9 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+              <Icon className={cn('h-4 w-4', iconText)} strokeWidth={2.2} />
             </div>
           </div>
-        </Card>
+
+          {/* Label */}
+          {isLoading ? (
+            <Skeleton className="h-4 w-28 mb-4" />
+          ) : (
+            <p className="text-base font-semibold text-foreground mb-4">{label}</p>
+          )}
+
+          <Separator />
+
+          {/* Sub */}
+          <div className="pt-3">
+            {isLoading ? (
+              <Skeleton className="h-3.5 w-24" />
+            ) : (
+              <p className="text-sm text-muted-foreground">{sub}</p>
+            )}
+          </div>
+        </div>
       </Wrapper>
     </motion.div>
   )
@@ -168,7 +184,7 @@ function MeetingRow({ meeting, index }: { meeting: Meeting; index: number }) {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.06, duration: 0.25 }}
       >
-        <div className="flex items-center gap-4 rounded-lg px-3 py-3 hover:bg-slate-50 transition-colors">
+        <div className="flex items-center gap-4 rounded-lg px-3 py-3 hover:bg-surface-1 transition-colors">
           <Link
             to={ROUTES.meeting(meeting.id)}
             className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
@@ -181,7 +197,7 @@ function MeetingRow({ meeting, index }: { meeting: Meeting; index: number }) {
           <StatusBadge status={meeting.status} />
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-slate-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-surface-2 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
               aria-label="Meeting options"
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
@@ -246,7 +262,7 @@ function OpenTaskRow({ item, index }: { item: ActionItemWithMeeting; index: numb
         onClick={() => toggle.mutate({ id: item.id, completed: true })}
         className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border hover:border-primary/60 hover:bg-primary/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Check className="h-2.5 w-2.5 text-transparent group-hover:text-primary/40" />
+        <Check className="h-2.5 w-2.5 text-transparent" />
       </button>
 
       <div className="min-w-0 flex-1 space-y-1">
@@ -286,6 +302,7 @@ function OpenTaskSkeleton() {
 export function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [newMeetingOpen, setNewMeetingOpen] = useState(false)
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: recentMeetings, isLoading: meetingsLoading } = useRecentMeetings()
   const { data: openTasks = [], isLoading: tasksLoading } = useOpenActionItems()
@@ -295,36 +312,41 @@ export function DashboardPage() {
     user?.email?.split('@')[0] ??
     'there'
 
-  const statCards: Omit<StatCardProps, 'index' | 'isLoading'>[] = [
+  const previewTasks = openTasks.slice(0, 6)
+
+  // Shared card data — used by all 3 variants
+  const cardData: Omit<CardConfig, 'isLoading' | 'index'>[] = [
     {
       icon: Mic,
-      accentClass: 'bg-primary',
+      color: 'blue',
       value: stats?.totalMeetings,
       label: 'Total Meetings',
-      sub: stats?.processingMeetings ? `${stats.processingMeetings} processing` : 'Across all time',
+      sub: stats?.processingMeetings ? `${stats.processingMeetings} in progress` : 'All time',
+      trend: stats?.totalMeetings ? 'Updated recently' : undefined,
       pulse: (stats?.processingMeetings ?? 0) > 0,
       onClick: () => navigate(ROUTES.meetings),
     },
     {
       icon: CheckCircle2,
-      accentClass: 'bg-emerald-500',
+      color: 'green',
       value: stats?.completedMeetings,
       label: 'Completed',
       sub: 'Successfully analyzed',
+      trend: stats?.completedMeetings ? 'Ready to review' : undefined,
     },
     {
-      icon: Clock,
-      accentClass: 'bg-amber-500',
+      icon: ListTodo,
+      color: 'amber',
       value: stats?.openActionItems,
       label: 'Open Tasks',
-      sub: stats?.openActionItems === 0 ? 'All caught up!' : 'Awaiting completion',
+      sub: stats?.openActionItems === 0 ? 'All caught up' : 'Needs attention',
       onClick: () => navigate(`${ROUTES.actionItems}?filter=open`),
     },
   ]
 
-  const previewTasks = openTasks.slice(0, 6)
-
   return (
+    <>
+    <NewMeetingDialog open={newMeetingOpen} onOpenChange={setNewMeetingOpen} />
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-6xl px-8 py-10 space-y-10">
 
@@ -341,18 +363,21 @@ export function DashboardPage() {
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">{todayLabel()}</p>
           </div>
-          <Button asChild size="sm" className="shrink-0 mb-1">
-            <Link to={ROUTES.meetingNew}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              New Meeting
-            </Link>
+          <Button className="shrink-0 shadow-sm gap-2" onClick={() => setNewMeetingOpen(true)}>
+            <Plus className="h-4 w-4" />
+            New Meeting
           </Button>
         </motion.div>
 
-        {/* ── Stats row ────────────────────────────────────────────── */}
+        {/* ── Stats ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {statCards.map((card, i) => (
-            <StatCard key={card.label} {...card} index={i} isLoading={statsLoading} />
+          {cardData.map((card, i) => (
+            <StatCardHero
+              key={card.label}
+              {...card}
+              isLoading={statsLoading}
+              index={i}
+            />
           ))}
         </div>
 
@@ -425,7 +450,7 @@ export function DashboardPage() {
                 </div>
               ) : openTasks.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div>
@@ -460,5 +485,6 @@ export function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

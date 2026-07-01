@@ -4,11 +4,15 @@ import { Header } from './Header'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { cn } from '@/lib/utils'
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useLocalStorage('memora-sidebar-collapsed', false)
   const isMobile = useIsMobile()
+
+  const toggleCollapse = () => setCollapsed((prev) => !prev)
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -20,7 +24,7 @@ export function AppLayout() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -32,11 +36,18 @@ export function AppLayout() {
           open={isMobile ? sidebarOpen : true}
           onClose={() => setSidebarOpen(false)}
           isMobile={isMobile}
+          collapsed={isMobile ? false : collapsed}
+          onToggleCollapse={toggleCollapse}
         />
       </div>
 
       {/* Main content */}
-      <div className={cn('flex flex-1 flex-col overflow-hidden', !isMobile && 'print:ml-0 ml-64')}>
+      <div
+        className={cn(
+          'flex flex-1 flex-col overflow-hidden transition-all duration-200 print:ml-0',
+          !isMobile && (collapsed ? 'ml-16' : 'ml-64'),
+        )}
+      >
         <div className="print:hidden">
           <Header onMenuClick={() => setSidebarOpen(true)} />
         </div>

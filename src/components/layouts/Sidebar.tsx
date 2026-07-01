@@ -6,12 +6,12 @@ import {
   Settings,
   Upload,
   Plus,
-  Brain,
   LogOut,
-  ChevronRight,
   BarChart2,
   CheckSquare,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { generateInitials, truncate } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import memoraLogo from '@/assets/memora.png'
 
 interface NavItem {
   label: string
@@ -28,12 +29,15 @@ interface NavItem {
   exact?: boolean
 }
 
-const NAV_ITEMS: NavItem[] = [
+const PRIMARY_NAV: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: ROUTES.dashboard, exact: true },
   { label: 'Meetings', icon: Mic, to: ROUTES.meetings },
   { label: 'Calendar', icon: CalendarDays, to: ROUTES.calendar },
   { label: 'Action Items', icon: CheckSquare, to: ROUTES.actionItems },
   { label: 'Analytics', icon: BarChart2, to: ROUTES.analytics },
+]
+
+const SECONDARY_NAV: NavItem[] = [
   { label: 'Upload', icon: Upload, to: ROUTES.meetingNew },
   { label: 'Settings', icon: Settings, to: ROUTES.settings },
 ]
@@ -42,9 +46,77 @@ interface SidebarProps {
   open: boolean
   onClose: () => void
   isMobile: boolean
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
+function NavGroup({
+  items,
+  isMobile,
+  collapsed,
+  onClose,
+}: {
+  items: NavItem[]
+  isMobile: boolean
+  collapsed: boolean
+  onClose: () => void
+}) {
+  return (
+    <TooltipProvider delayDuration={0}>
+      {items.map((item) => (
+        <Tooltip key={item.to} disableHoverableContent>
+          <TooltipTrigger asChild>
+            <NavLink
+              to={item.to}
+              end={item.exact ?? false}
+              onClick={isMobile ? onClose : undefined}
+              className={({ isActive }) =>
+                cn(
+                  'group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-100',
+                  collapsed && 'justify-center px-0',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    className={cn(
+                      'h-4 w-4 shrink-0 transition-colors',
+                      isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
+                    )}
+                  />
+                  {!collapsed && (
+                    <span className="flex-1 leading-none truncate">{item.label}</span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right" className="text-xs">
+              {item.label}
+            </TooltipContent>
+          )}
+        </Tooltip>
+      ))}
+    </TooltipProvider>
+  )
+}
+
+function SidebarContent({
+  isMobile,
+  collapsed,
+  onClose,
+  onToggleCollapse,
+}: {
+  isMobile: boolean
+  collapsed: boolean
+  onClose: () => void
+  onToggleCollapse: () => void
+}) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
@@ -53,102 +125,136 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     navigate(ROUTES.login)
   }
 
-  const sidebarContent = (
+  return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 px-5 border-b border-border/50">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand shadow-glow-sm">
-          <Brain className="h-4 w-4 text-white" />
+      <div
+        className={cn(
+          'flex h-14 items-center border-b border-border',
+          collapsed ? 'flex-col justify-center gap-1.5 px-2 py-2 h-auto' : 'justify-between px-4',
+        )}
+      >
+        <div className={cn('flex items-center gap-2.5 min-w-0', collapsed && 'pt-1')}>
+          <img src={memoraLogo} alt="Memora" className="h-7 w-7 shrink-0" />
+          {!collapsed && (
+            <span className="text-[15px] font-bold tracking-tight text-foreground font-display truncate">
+              Memora
+            </span>
+          )}
         </div>
-        <span className="text-lg font-bold tracking-tight text-gradient-brand">Memora</span>
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed
+              ? <ChevronRight className="h-3.5 w-3.5" />
+              : <ChevronLeft className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
 
       {/* New Meeting CTA */}
-      <div className="px-3 py-4">
-        <Button
-          className="w-full gap-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40 transition-all"
-          variant="ghost"
-          onClick={() => {
-            navigate(ROUTES.meetingNew)
-            if (isMobile) onClose()
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          New Meeting
-        </Button>
+      <div className={cn('pt-4 pb-2', collapsed ? 'px-2' : 'px-3')}>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip disableHoverableContent>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                className={cn('gap-2 font-medium', collapsed ? 'w-full px-0 justify-center' : 'w-full')}
+                onClick={() => {
+                  navigate(ROUTES.meetingNew)
+                  if (isMobile) onClose()
+                }}
+                aria-label={collapsed ? 'New Meeting' : undefined}
+              >
+                <Plus className="h-3.5 w-3.5 shrink-0" />
+                {!collapsed && 'New Meeting'}
+              </Button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" className="text-xs">
+                New Meeting
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 px-3">
-        <TooltipProvider delayDuration={0}>
-          {NAV_ITEMS.map((item) => (
-            <Tooltip key={item.to}>
-              <TooltipTrigger asChild>
-                <NavLink
-                  to={item.to}
-                  end={item.exact ?? false}
-                  onClick={isMobile ? onClose : undefined}
-                  className={({ isActive }) =>
-                    cn(
-                      'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                      isActive
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <item.icon
-                        className={cn('h-4 w-4 shrink-0 transition-colors', isActive && 'text-primary')}
-                      />
-                      <span className="flex-1">{item.label}</span>
-                      {isActive && (
-                        <ChevronRight className="h-3 w-3 text-primary/50" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
-            </Tooltip>
-          ))}
-        </TooltipProvider>
+      {/* Primary Navigation */}
+      <nav
+        className={cn('flex-1 overflow-y-auto py-2 space-y-0.5', collapsed ? 'px-2' : 'px-3')}
+        aria-label="Main navigation"
+      >
+        <NavGroup items={PRIMARY_NAV} isMobile={isMobile} collapsed={collapsed} onClose={onClose} />
       </nav>
 
-      {/* User section */}
-      <div className="border-t border-border/50 p-3">
-        <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-surface-2 transition-colors group">
-          <Avatar className="h-8 w-8 ring-1 ring-border">
-            <AvatarImage src={user?.user_metadata?.['avatar_url'] as string | undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {user?.user_metadata?.['full_name']
-                ? generateInitials(user.user_metadata['full_name'] as string)
-                : (user?.email?.charAt(0).toUpperCase() ?? '?')}
-            </AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">
-              {(user?.user_metadata?.['full_name'] as string | undefined) ??
-                truncate(user?.email ?? 'User', 20)}
-            </p>
-            <p className="text-2xs text-muted-foreground truncate">{user?.email}</p>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-            onClick={() => void handleSignOut()}
-            title="Sign out"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+      {/* Secondary Navigation */}
+      <div className={cn('py-2 space-y-0.5 border-t border-border', collapsed ? 'px-2' : 'px-3')}>
+        <NavGroup items={SECONDARY_NAV} isMobile={isMobile} collapsed={collapsed} onClose={onClose} />
       </div>
+
+      {/* User section */}
+      <div className={cn('border-t border-border p-2', !collapsed && 'p-3')}>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip disableHoverableContent>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  'group flex items-center gap-2.5 rounded-md py-2 hover:bg-accent transition-colors cursor-default',
+                  collapsed ? 'justify-center px-0' : 'px-2',
+                )}
+              >
+                <Avatar className="h-7 w-7 shrink-0 ring-1 ring-border">
+                  <AvatarImage src={user?.user_metadata?.['avatar_url'] as string | undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-semibold">
+                    {user?.user_metadata?.['full_name']
+                      ? generateInitials(user.user_metadata['full_name'] as string)
+                      : (user?.email?.charAt(0).toUpperCase() ?? '?')}
+                  </AvatarFallback>
+                </Avatar>
+
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate leading-tight">
+                        {(user?.user_metadata?.['full_name'] as string | undefined) ??
+                          truncate(user?.email ?? 'User', 20)}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate leading-tight">
+                        {truncate(user?.email ?? '', 22)}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => void handleSignOut()}
+                      title="Sign out"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" className="text-xs">
+                {(user?.user_metadata?.['full_name'] as string | undefined) ?? user?.email ?? 'Account'}
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
     </div>
   )
+}
+
+export function Sidebar({ open, onClose, isMobile, collapsed, onToggleCollapse }: SidebarProps) {
+  const sidebarWidth = collapsed ? 'w-16' : 'w-64'
 
   if (isMobile) {
     return (
@@ -159,9 +265,15 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
             animate={{ x: 0 }}
             exit={{ x: -256 }}
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-            className="fixed inset-y-0 left-0 z-40 w-64 border-r border-border/50 bg-surface-1"
+            className="fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface-1"
+            aria-label="Sidebar"
           >
-            {sidebarContent}
+            <SidebarContent
+              isMobile
+              collapsed={false}
+              onClose={onClose}
+              onToggleCollapse={onToggleCollapse}
+            />
           </motion.aside>
         )}
       </AnimatePresence>
@@ -169,8 +281,19 @@ export function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 w-64 border-r border-border/50 bg-surface-1">
-      {sidebarContent}
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-20 border-r border-border bg-surface-1 transition-all duration-200 overflow-hidden',
+        sidebarWidth,
+      )}
+      aria-label="Sidebar"
+    >
+      <SidebarContent
+        isMobile={false}
+        collapsed={collapsed}
+        onClose={onClose}
+        onToggleCollapse={onToggleCollapse}
+      />
     </aside>
   )
 }

@@ -200,7 +200,7 @@ export function SidebarCalendar({ onClose }: SidebarCalendarProps) {
       className="fixed inset-y-0 left-64 z-10 flex w-56 flex-col border-r border-border/50 bg-surface-1"
     >
       {/* Header */}
-      <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <span className="text-sm font-semibold text-foreground">Calendar</span>
         <button
           type="button"

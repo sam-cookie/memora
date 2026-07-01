@@ -22,10 +22,12 @@ export function NotFoundPage() {
         className="relative z-10 flex flex-col items-center gap-6"
       >
         <div className="relative">
-          <p className="text-[120px] font-black leading-none tracking-tighter text-gradient-brand select-none">
+          <p className="text-[120px] font-black leading-none tracking-tighter text-primary/20 select-none font-display">
             404
           </p>
-          <div className="absolute inset-0 blur-3xl opacity-20 bg-gradient-brand rounded-full" />
+          <p className="absolute inset-0 flex items-center justify-center text-[120px] font-black leading-none tracking-tighter text-foreground select-none font-display">
+            404
+          </p>
         </div>
 
         <div className="space-y-2">
