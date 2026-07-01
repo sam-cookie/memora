@@ -1,24 +1,30 @@
-import { useParams, Link } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import {
-  FileText,
   ArrowLeft,
+  Calendar,
+  Users,
+  Check,
+  Printer,
+  FileDown,
   CheckSquare,
   Lightbulb,
   AlertTriangle,
   HelpCircle,
   AlignLeft,
-  Users,
-  Calendar,
-  Check,
+  FileText,
+  List,
+  Loader2,
 } from 'lucide-react'
-import { PageHeader } from '@/components/common/PageHeader'
-import { EmptyState } from '@/components/common/EmptyState'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { EmptyState } from '@/components/common/EmptyState'
 import { ROUTES } from '@/config/routes'
 import {
   useMeeting,
@@ -27,10 +33,19 @@ import {
   useRisks,
   useFollowUpQuestions,
   useToggleActionItem,
+  useUpdateMeeting,
 } from '../hooks/useMeetingDetail'
-import type { ActionItemPriority, RiskSeverity } from '@/types/database'
+import type {
+  Meeting,
+  ActionItem,
+  KeyDecision,
+  Risk,
+  FollowUpQuestion,
+  ActionItemPriority,
+  RiskSeverity,
+} from '@/types/database'
 
-// ─── Priority / Severity badge helpers ────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRIORITY_VARIANT: Record<ActionItemPriority, 'secondary' | 'warning' | 'destructive' | 'default'> = {
   low: 'secondary',
@@ -46,6 +61,8 @@ const SEVERITY_VARIANT: Record<RiskSeverity, 'secondary' | 'warning' | 'destruct
   critical: 'destructive',
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -55,225 +72,228 @@ function formatDate(iso: string) {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   })
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
 
-function DetailSkeleton() {
+function buildMarkdown(
+  meeting: Meeting,
+  actionItems: ActionItem[],
+  decisions: KeyDecision[],
+  risks: Risk[],
+  questions: FollowUpQuestion[],
+): string {
+  const lines: string[] = [`# ${meeting.title}`, '']
+  const date = meeting.processed_at ?? meeting.created_at
+
+  lines.push(`**Date:** ${formatDate(date)}`)
+  if (meeting.participants?.length) {
+    lines.push(`**Participants:** ${meeting.participants.join(', ')}`)
+  }
+  lines.push('')
+
+  if (meeting.summary) {
+    lines.push('## Summary', '', meeting.summary, '')
+  }
+
+  if (meeting.key_points?.length) {
+    lines.push('## Key Points', '')
+    meeting.key_points.forEach((p) => lines.push(`- ${p}`))
+    lines.push('')
+  }
+
+  if (actionItems.length > 0) {
+    lines.push('## Action Items', '')
+    actionItems.forEach((item) => {
+      const check = item.completed ? '[x]' : '[ ]'
+      const assignee = item.assignee ? ` — ${item.assignee}` : ''
+      lines.push(`- ${check} ${item.content}${assignee}`)
+    })
+    lines.push('')
+  }
+
+  if (decisions.length > 0) {
+    lines.push('## Decisions', '')
+    decisions.forEach((d) => {
+      lines.push(`- ${d.content}`)
+      if (d.context) lines.push(`  > ${d.context}`)
+    })
+    lines.push('')
+  }
+
+  if (risks.length > 0) {
+    lines.push('## Risks & Blockers', '')
+    risks.forEach((r) => lines.push(`- [${r.severity.toUpperCase()}] ${r.content}`))
+    lines.push('')
+  }
+
+  if (questions.length > 0) {
+    lines.push('## Follow-up Questions', '')
+    questions.forEach((q, i) => lines.push(`${i + 1}. ${q.question}`))
+    lines.push('')
+  }
+
+  if (meeting.transcript) {
+    lines.push('## Transcript', '', meeting.transcript)
+  }
+
+  return lines.join('\n')
+}
+
+function downloadMarkdown(filename: string, content: string) {
+  const blob = new Blob([content], { type: 'text/markdown' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ─── Editable Title ───────────────────────────────────────────────────────────
+
+interface EditableTitleProps {
+  value: string
+  onSave: (title: string) => void
+  disabled?: boolean
+}
+
+function EditableTitle({ value, onSave, disabled }: EditableTitleProps) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setDraft(value) }, [value])
+  useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== value) onSave(trimmed)
+    else setDraft(value)
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') { setEditing(false); setDraft(value) }
+        }}
+        className="w-full text-3xl font-bold tracking-tight leading-tight bg-transparent border-none outline-none ring-0 text-foreground"
+        aria-label="Meeting title"
+      />
+    )
+  }
+
   return (
-    <div className="space-y-6 p-6">
+    <h1
+      className={`text-3xl font-bold tracking-tight leading-tight text-foreground transition-opacity ${
+        !disabled ? 'cursor-text hover:opacity-80' : ''
+      }`}
+      onClick={() => !disabled && setEditing(true)}
+      onKeyDown={(e) => e.key === 'Enter' && !disabled && setEditing(true)}
+      tabIndex={disabled ? undefined : 0}
+      role="heading"
+      aria-level={1}
+    >
+      {value}
+    </h1>
+  )
+}
+
+// ─── Doc Section ──────────────────────────────────────────────────────────────
+
+function DocSection({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: LucideIcon
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <section className="space-y-3">
+      <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+// ─── Skeletons ────────────────────────────────────────────────────────────────
+
+function DocumentSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto w-full px-8 py-12 space-y-10">
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-3/4" />
+        <div className="flex gap-6">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+      <Separator />
       <div className="space-y-2">
-        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-3 w-16" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-4/6" />
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24" />
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          <Skeleton key={i} className="h-10 w-full rounded-lg" />
         ))}
       </div>
     </div>
   )
 }
 
-// ─── Overview tab ─────────────────────────────────────────────────────────────
-
-function OverviewTab({ summary, participants }: { summary: string | null; participants: string[] | null }) {
+function ToolbarSkeleton() {
   return (
-    <div className="space-y-6">
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Summary</h2>
-        {summary ? (
-          <p className="text-sm leading-relaxed text-foreground">{summary}</p>
-        ) : (
-          <p className="text-sm text-muted-foreground italic">No summary available.</p>
-        )}
-      </section>
-
-      {participants && participants.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Participants
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {participants.map((name) => (
-              <Badge key={name} variant="secondary">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        </section>
-      )}
+    <div className="flex items-center justify-between px-6 py-3 border-b border-border/50 print:hidden">
+      <Skeleton className="h-8 w-24" />
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-8 w-28" />
+      </div>
     </div>
   )
 }
 
-// ─── Action Items tab ─────────────────────────────────────────────────────────
+// ─── Processing view ──────────────────────────────────────────────────────────
 
-function ActionItemsTab({ meetingId }: { meetingId: string }) {
-  const { data: items, isLoading } = useActionItems(meetingId, true)
-  const toggle = useToggleActionItem(meetingId)
-
-  if (isLoading) return <DetailSkeleton />
-
-  if (!items?.length) {
-    return <EmptyState icon={CheckSquare} title="No action items" description="No action items were extracted from this meeting." />
-  }
+function ProcessingDoc({ status }: { status: string }) {
+  const label =
+    status === 'transcribing'
+      ? 'Transcribing audio…'
+      : status === 'analyzing'
+      ? 'Analyzing with AI…'
+      : 'Processing your meeting…'
 
   return (
-    <ul className="space-y-2">
-      {items.map((item) => (
-        <motion.li
-          key={item.id}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
-        >
-          <button
-            aria-label={item.completed ? 'Mark incomplete' : 'Mark complete'}
-            onClick={() => toggle.mutate({ id: item.id, completed: !item.completed })}
-            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-              item.completed
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border hover:border-primary/60'
-            }`}
-          >
-            {item.completed && <Check className="h-3 w-3" />}
-          </button>
-
-          <div className="min-w-0 flex-1">
-            <p className={`text-sm ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-              {item.content}
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <Badge variant={PRIORITY_VARIANT[item.priority]}>{capitalize(item.priority)}</Badge>
-              {item.assignee && (
-                <span className="text-xs text-muted-foreground">→ {item.assignee}</span>
-              )}
-            </div>
-          </div>
-        </motion.li>
-      ))}
-    </ul>
-  )
-}
-
-// ─── Decisions tab ────────────────────────────────────────────────────────────
-
-function DecisionsTab({ meetingId }: { meetingId: string }) {
-  const { data: decisions, isLoading } = useDecisions(meetingId, true)
-
-  if (isLoading) return <DetailSkeleton />
-
-  if (!decisions?.length) {
-    return <EmptyState icon={Lightbulb} title="No decisions" description="No decisions were recorded in this meeting." />
-  }
-
-  return (
-    <ul className="space-y-2">
-      {decisions.map((d) => (
-        <motion.li
-          key={d.id}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-lg border border-border bg-card p-4 space-y-1"
-        >
-          <p className="text-sm font-medium text-foreground">{d.content}</p>
-          {d.context && <p className="text-xs text-muted-foreground">{d.context}</p>}
-        </motion.li>
-      ))}
-    </ul>
-  )
-}
-
-// ─── Risks tab ────────────────────────────────────────────────────────────────
-
-function RisksTab({ meetingId }: { meetingId: string }) {
-  const { data: risks, isLoading } = useRisks(meetingId, true)
-
-  if (isLoading) return <DetailSkeleton />
-
-  if (!risks?.length) {
-    return <EmptyState icon={AlertTriangle} title="No risks" description="No risks or blockers were identified." />
-  }
-
-  return (
-    <ul className="space-y-2">
-      {risks.map((r) => (
-        <motion.li
-          key={r.id}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
-        >
-          <Badge variant={SEVERITY_VARIANT[r.severity]} className="mt-0.5 shrink-0">
-            {capitalize(r.severity)}
-          </Badge>
-          <p className="text-sm text-foreground">{r.content}</p>
-        </motion.li>
-      ))}
-    </ul>
-  )
-}
-
-// ─── Follow-up tab ────────────────────────────────────────────────────────────
-
-function FollowUpTab({ meetingId }: { meetingId: string }) {
-  const { data: questions, isLoading } = useFollowUpQuestions(meetingId, true)
-
-  if (isLoading) return <DetailSkeleton />
-
-  if (!questions?.length) {
-    return <EmptyState icon={HelpCircle} title="No follow-up questions" description="No open questions were identified." />
-  }
-
-  return (
-    <ul className="space-y-2">
-      {questions.map((q, i) => (
-        <motion.li
-          key={q.id}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
-        >
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-            {i + 1}
-          </span>
-          <p className="text-sm text-foreground">{q.question}</p>
-        </motion.li>
-      ))}
-    </ul>
-  )
-}
-
-// ─── Transcript tab ───────────────────────────────────────────────────────────
-
-function TranscriptTab({ transcript }: { transcript: string | null }) {
-  if (!transcript) {
-    return <EmptyState icon={AlignLeft} title="No transcript" description="The transcript is not available for this meeting." />
-  }
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground/90">
-        {transcript}
-      </pre>
-    </div>
-  )
-}
-
-// ─── Processing state ─────────────────────────────────────────────────────────
-
-function ProcessingState({ status }: { status: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-      <StatusBadge status={status as never} />
-      <p className="text-sm text-muted-foreground">
-        Your meeting is being processed. This page will update automatically.
-      </p>
+    <div className="max-w-3xl mx-auto w-full px-8 py-12 space-y-8">
+      <Skeleton className="h-9 w-2/3" />
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+        <span>{label}</span>
+        <StatusBadge status={status as never} />
+      </div>
+      <Separator />
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className={`h-4 rounded animate-pulse ${i === 2 ? 'w-1/2' : 'w-full'}`} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -282,24 +302,53 @@ function ProcessingState({ status }: { status: string }) {
 
 export function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: meeting, isLoading, isError } = useMeeting(id ?? '')
+  const meetingId = id ?? ''
+
+  const { data: meeting, isLoading, isError } = useMeeting(meetingId)
+  const isCompleted = meeting?.status === 'completed'
+  const isProcessing = ['pending', 'uploading', 'transcribing', 'analyzing'].includes(
+    meeting?.status ?? '',
+  )
+  const isFailed = meeting?.status === 'failed'
+
+  const { data: actionItems = [] } = useActionItems(meetingId, isCompleted)
+  const { data: decisions = [] } = useDecisions(meetingId, isCompleted)
+  const { data: risks = [] } = useRisks(meetingId, isCompleted)
+  const { data: questions = [] } = useFollowUpQuestions(meetingId, isCompleted)
+  const toggle = useToggleActionItem(meetingId)
+  const update = useUpdateMeeting(meetingId)
+
+  function handleExportMarkdown() {
+    if (!meeting) return
+    const content = buildMarkdown(meeting, actionItems, decisions, risks, questions)
+    const slug = meeting.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
+    downloadMarkdown(`${slug}.md`, content)
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-full">
-        <div className="px-6 py-5 border-b border-border/50 space-y-2">
-          <Skeleton className="h-7 w-64" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-        <DetailSkeleton />
+        <ToolbarSkeleton />
+        <DocumentSkeleton />
       </div>
     )
   }
 
+  // ── Not found / error ────────────────────────────────────────────────────
+
   if (isError || !meeting) {
     return (
       <div className="flex flex-col min-h-full">
-        <PageHeader title="Meeting not found" icon={FileText} />
+        <div className="px-6 py-3 border-b border-border/50 print:hidden">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={ROUTES.meetings}>
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Meetings
+            </Link>
+          </Button>
+        </div>
         <EmptyState
           icon={FileText}
           title="Meeting not found"
@@ -310,84 +359,243 @@ export function MeetingDetailPage() {
     )
   }
 
-  const isCompleted = meeting.status === 'completed'
-  const isProcessing = ['pending', 'uploading', 'transcribing', 'analyzing'].includes(meeting.status)
+  const displayDate = meeting.processed_at ?? meeting.created_at
 
   return (
     <div className="flex flex-col min-h-full">
-      <PageHeader
-        title={meeting.title}
-        icon={FileText}
-        description={meeting.processed_at ? formatDate(meeting.processed_at) : undefined}
-        actions={
-          <div className="flex items-center gap-2">
-            <StatusBadge status={meeting.status} />
-            <Button variant="outline" size="sm" asChild>
-              <Link to={ROUTES.meetings}>
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                Back
-              </Link>
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="flex-1 p-6">
-        {isProcessing && <ProcessingState status={meeting.status} />}
-
-        {isCompleted && (
-          <Tabs defaultValue="overview" className="space-y-5">
-            <TabsList>
-              <TabsTrigger value="overview">
-                <FileText className="h-3.5 w-3.5" /> Overview
-              </TabsTrigger>
-              <TabsTrigger value="action-items">
-                <CheckSquare className="h-3.5 w-3.5" /> Action Items
-              </TabsTrigger>
-              <TabsTrigger value="decisions">
-                <Lightbulb className="h-3.5 w-3.5" /> Decisions
-              </TabsTrigger>
-              <TabsTrigger value="risks">
-                <AlertTriangle className="h-3.5 w-3.5" /> Risks
-              </TabsTrigger>
-              <TabsTrigger value="follow-up">
-                <HelpCircle className="h-3.5 w-3.5" /> Follow-up
-              </TabsTrigger>
-              <TabsTrigger value="transcript">
-                <AlignLeft className="h-3.5 w-3.5" /> Transcript
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview">
-              <OverviewTab summary={meeting.summary} participants={meeting.participants} />
-            </TabsContent>
-            <TabsContent value="action-items">
-              <ActionItemsTab meetingId={meeting.id} />
-            </TabsContent>
-            <TabsContent value="decisions">
-              <DecisionsTab meetingId={meeting.id} />
-            </TabsContent>
-            <TabsContent value="risks">
-              <RisksTab meetingId={meeting.id} />
-            </TabsContent>
-            <TabsContent value="follow-up">
-              <FollowUpTab meetingId={meeting.id} />
-            </TabsContent>
-            <TabsContent value="transcript">
-              <TranscriptTab transcript={meeting.transcript} />
-            </TabsContent>
-          </Tabs>
-        )}
-
-        {meeting.status === 'failed' && (
-          <EmptyState
-            icon={FileText}
-            title="Processing failed"
-            description="Something went wrong while processing this meeting."
-            action={{ label: 'Upload another', onClick: () => history.back() }}
-          />
-        )}
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/50 print:hidden">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={ROUTES.meetings}>
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Meetings
+          </Link>
+        </Button>
+        <div className="flex items-center gap-2">
+          {(isProcessing || isFailed) && <StatusBadge status={meeting.status} />}
+          {isCompleted && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleExportMarkdown}>
+                <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                Export Markdown
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="h-3.5 w-3.5 mr-1.5" />
+                Export PDF
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Processing */}
+      {isProcessing && <ProcessingDoc status={meeting.status} />}
+
+      {/* Failed */}
+      {isFailed && (
+        <EmptyState
+          icon={AlertTriangle}
+          title="Processing failed"
+          description="Something went wrong while processing this meeting. Try uploading again."
+          className="flex-1"
+        />
+      )}
+
+      {/* Document */}
+      {isCompleted && (
+        <motion.article
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="max-w-3xl mx-auto w-full px-8 py-12 space-y-10"
+        >
+          {/* Title */}
+          <EditableTitle
+            value={meeting.title}
+            onSave={(title) => update.mutate({ title })}
+            disabled={update.isPending}
+          />
+
+          {/* Metadata */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              {formatDate(displayDate)}
+            </span>
+            {meeting.participants && meeting.participants.length > 0 && (
+              <span className="flex items-center gap-2">
+                <Users className="h-3.5 w-3.5 shrink-0" />
+                <span className="flex flex-wrap gap-1.5">
+                  {meeting.participants.map((name) => (
+                    <Badge key={name} variant="secondary" className="text-xs font-normal">
+                      {name}
+                    </Badge>
+                  ))}
+                </span>
+              </span>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Summary */}
+          {meeting.summary && (
+            <DocSection icon={FileText} title="Summary">
+              <p className="text-sm leading-relaxed text-foreground/90">{meeting.summary}</p>
+            </DocSection>
+          )}
+
+          {/* Key Points */}
+          {meeting.key_points && meeting.key_points.length > 0 && (
+            <DocSection icon={List} title="Key Points">
+              <ul className="space-y-2">
+                {meeting.key_points.map((point, i) => (
+                  <motion.li
+                    key={i}
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-start gap-2.5 text-sm text-foreground/90"
+                  >
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    {point}
+                  </motion.li>
+                ))}
+              </ul>
+            </DocSection>
+          )}
+
+          {/* Action Items */}
+          <DocSection icon={CheckSquare} title="Action Items">
+            {actionItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No action items extracted.</p>
+            ) : (
+              <ul className="space-y-3">
+                {actionItems.map((item, i) => (
+                  <motion.li
+                    key={item.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-start gap-3"
+                  >
+                    <button
+                      aria-label={item.completed ? 'Mark incomplete' : 'Mark complete'}
+                      onClick={() => toggle.mutate({ id: item.id, completed: !item.completed })}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        item.completed
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:border-primary/60'
+                      }`}
+                    >
+                      {item.completed && <Check className="h-3 w-3" />}
+                    </button>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p
+                        className={`text-sm leading-snug ${
+                          item.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                        }`}
+                      >
+                        {item.content}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={PRIORITY_VARIANT[item.priority]} className="text-xs">
+                          {capitalize(item.priority)}
+                        </Badge>
+                        {item.assignee && (
+                          <span className="text-xs text-muted-foreground">→ {item.assignee}</span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.li>
+                ))}
+              </ul>
+            )}
+          </DocSection>
+
+          {/* Decisions */}
+          {decisions.length > 0 && (
+            <DocSection icon={Lightbulb} title="Decisions">
+              <ul className="space-y-3">
+                {decisions.map((d, i) => (
+                  <motion.li
+                    key={d.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="space-y-1"
+                  >
+                    <p className="text-sm font-medium text-foreground">{d.content}</p>
+                    {d.context && (
+                      <p className="text-xs text-muted-foreground pl-3 border-l-2 border-border/60 leading-relaxed">
+                        {d.context}
+                      </p>
+                    )}
+                  </motion.li>
+                ))}
+              </ul>
+            </DocSection>
+          )}
+
+          {/* Risks */}
+          {risks.length > 0 && (
+            <DocSection icon={AlertTriangle} title="Risks & Blockers">
+              <ul className="space-y-2">
+                {risks.map((r, i) => (
+                  <motion.li
+                    key={r.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-start gap-3 text-sm text-foreground"
+                  >
+                    <Badge
+                      variant={SEVERITY_VARIANT[r.severity]}
+                      className="mt-0.5 shrink-0 text-xs"
+                    >
+                      {capitalize(r.severity)}
+                    </Badge>
+                    {r.content}
+                  </motion.li>
+                ))}
+              </ul>
+            </DocSection>
+          )}
+
+          {/* Follow-up Questions */}
+          {questions.length > 0 && (
+            <DocSection icon={HelpCircle} title="Follow-up Questions">
+              <ol className="space-y-2">
+                {questions.map((q, i) => (
+                  <motion.li
+                    key={q.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="flex items-start gap-3 text-sm text-foreground"
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {i + 1}
+                    </span>
+                    {q.question}
+                  </motion.li>
+                ))}
+              </ol>
+            </DocSection>
+          )}
+
+          {/* Transcript */}
+          {meeting.transcript && (
+            <DocSection icon={AlignLeft} title="Transcript">
+              <div className="rounded-lg border border-border bg-card/50 p-5 overflow-x-auto">
+                <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/80">
+                  {meeting.transcript}
+                </pre>
+              </div>
+            </DocSection>
+          )}
+        </motion.article>
+      )}
     </div>
   )
 }

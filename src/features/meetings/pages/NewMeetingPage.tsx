@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/common/FormField'
 import { FileDropzone } from '../components/FileDropzone'
 import { UploadProgress } from '../components/UploadProgress'
+import { ParticipantInput } from '../components/ParticipantInput'
 import { useUploadMeeting } from '../hooks/useUploadMeeting'
 import { ROUTES } from '@/config/routes'
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title must be under 200 characters'),
   description: z.string().max(1000, 'Description must be under 1000 characters').optional(),
+  meeting_date: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -24,6 +26,7 @@ export function NewMeetingPage() {
   const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [participants, setParticipants] = useState<string[]>([])
   const { phase, uploadProgress, meetingId, error, upload, reset } = useUploadMeeting()
 
   const {
@@ -46,7 +49,11 @@ export function NewMeetingPage() {
       return
     }
     setFileError(null)
-    await upload({ ...data, file })
+    const meetingDate = data.meeting_date
+      ? new Date(data.meeting_date).toISOString()
+      : new Date().toISOString()
+
+    await upload({ title: data.title, description: data.description, file, participants, meetingDate })
   }
 
   const handleReset = () => {
@@ -54,6 +61,7 @@ export function NewMeetingPage() {
     resetForm()
     setFile(null)
     setFileError(null)
+    setParticipants([])
   }
 
   const isProcessing = PROCESSING_PHASES.has(phase)
@@ -86,6 +94,30 @@ export function NewMeetingPage() {
               {...register('description')}
             />
           </FormField>
+
+          <FormField id="meeting_date" label="Date & time" error={errors.meeting_date?.message}>
+            <Input
+              id="meeting_date"
+              type="datetime-local"
+              className="[color-scheme:dark]"
+              {...register('meeting_date')}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Leave blank to use today's date and time.
+            </p>
+          </FormField>
+
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium">Participants</p>
+            <ParticipantInput
+              value={participants}
+              onChange={setParticipants}
+              disabled={isProcessing}
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional — AI will also detect participants from the transcript.
+            </p>
+          </div>
 
           <div className="space-y-1.5">
             <p className="text-sm font-medium">

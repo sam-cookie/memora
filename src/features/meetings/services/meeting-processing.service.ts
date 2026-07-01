@@ -10,6 +10,8 @@ interface ProcessOptions {
   meetingId: string
   userId: string
   file: File
+  /** User-provided participants merged with AI-extracted ones */
+  participants?: string[]
   onPhase: (phase: ProcessingPhase) => void
 }
 
@@ -18,7 +20,7 @@ interface ProcessOptions {
  * Updates the meeting status in the DB at each stage so the UI reflects real progress.
  */
 export const meetingProcessingService = {
-  async process({ meetingId, userId, file, onPhase }: ProcessOptions): Promise<void> {
+  async process({ meetingId, userId, file, participants = [], onPhase }: ProcessOptions): Promise<void> {
     const setStatus = (status: MeetingStatus) =>
       meetingsService.updateMeeting(meetingId, { status })
 
@@ -36,10 +38,14 @@ export const meetingProcessingService = {
     // --- 3. Save ---
     onPhase('saving')
 
+    // Merge user-provided participants with AI-extracted ones (dedupe, preserve order)
+    const merged = [...new Set([...participants, ...analysis.participants])]
+
     await meetingsService.updateMeeting(meetingId, {
       status: 'completed',
       summary: analysis.summary,
-      participants: analysis.participants,
+      key_points: analysis.keyPoints,
+      participants: merged.length > 0 ? merged : null,
       processed_at: new Date().toISOString(),
     })
 

@@ -27,15 +27,19 @@ export function AppLayout() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <Sidebar
-        open={isMobile ? sidebarOpen : true}
-        onClose={() => setSidebarOpen(false)}
-        isMobile={isMobile}
-      />
+      <div className="print:hidden">
+        <Sidebar
+          open={isMobile ? sidebarOpen : true}
+          onClose={() => setSidebarOpen(false)}
+          isMobile={isMobile}
+        />
+      </div>
 
       {/* Main content */}
-      <div className={cn('flex flex-1 flex-col overflow-hidden', !isMobile && 'ml-64')}>
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+      <div className={cn('flex flex-1 flex-col overflow-hidden', !isMobile && 'print:ml-0 ml-64')}>
+        <div className="print:hidden">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+        </div>
 
         <main className="flex-1 overflow-y-auto">
           <motion.div

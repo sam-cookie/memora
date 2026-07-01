@@ -47,6 +47,7 @@ export interface Database {
           file_type: string | null
           transcript: string | null
           summary: string | null
+          key_points: string[] | null
           participants: string[] | null
           tags: string[] | null
           meeting_date: string | null
@@ -66,6 +67,7 @@ export interface Database {
           file_type?: string | null
           transcript?: string | null
           summary?: string | null
+          key_points?: string[] | null
           participants?: string[] | null
           tags?: string[] | null
           meeting_date?: string | null
@@ -85,6 +87,7 @@ export interface Database {
           file_type?: string | null
           transcript?: string | null
           summary?: string | null
+          key_points?: string[] | null
           participants?: string[] | null
           tags?: string[] | null
           meeting_date?: string | null
@@ -251,6 +254,7 @@ export type RiskSeverity = 'low' | 'medium' | 'high' | 'critical'
 // Convenience row types
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Meeting = Database['public']['Tables']['meetings']['Row']
+export type MeetingUpdate = Database['public']['Tables']['meetings']['Update']
 export type ActionItem = Database['public']['Tables']['action_items']['Row']
 export type KeyDecision = Database['public']['Tables']['key_decisions']['Row']
 export type Risk = Database['public']['Tables']['risks']['Row']

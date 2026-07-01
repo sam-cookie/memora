@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { meetingsService } from '../services/meetings.service'
+import type { MeetingUpdate } from '@/types/database'
 
 const PROCESSING_STATUSES = new Set(['pending', 'uploading', 'transcribing', 'analyzing'])
 
@@ -54,6 +55,17 @@ export function useToggleActionItem(meetingId: string) {
       meetingsService.toggleActionItem(id, completed),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'action-items'] })
+    },
+  })
+}
+
+export function useUpdateMeeting(meetingId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: MeetingUpdate) => meetingsService.updateMeeting(meetingId, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['meeting', meetingId], updated)
     },
   })
 }

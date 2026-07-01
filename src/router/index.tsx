@@ -35,6 +35,12 @@ const NewMeetingPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
+const SearchPage = lazy(() =>
+  import('@/features/search/pages/SearchPage').then((m) => ({ default: m.SearchPage })),
+)
+const AnalyticsPage = lazy(() =>
+  import('@/features/analytics/pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
+)
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -68,6 +74,8 @@ export const router = createBrowserRouter([
       { path: ROUTES.meetings, element: withSuspense(MeetingsPage) },
       { path: '/meetings/:id', element: withSuspense(MeetingDetailPage) },
       { path: ROUTES.meetingNew, element: withSuspense(NewMeetingPage) },
+      { path: ROUTES.search, element: withSuspense(SearchPage) },
+      { path: ROUTES.analytics, element: withSuspense(AnalyticsPage) },
       { path: ROUTES.settings, element: withSuspense(SettingsPage) },
       { path: `${ROUTES.settings}/:tab`, element: withSuspense(SettingsPage) },
     ],

@@ -23,6 +23,8 @@ interface UploadState {
 interface UploadInput {
   title: string
   description?: string
+  participants?: string[]
+  meetingDate?: string
   file: File
 }
 
@@ -38,7 +40,7 @@ export function useUploadMeeting() {
   const [state, setState] = useState<UploadState>(INITIAL)
 
   const upload = useCallback(
-    async ({ title, description, file }: UploadInput) => {
+    async ({ title, description, participants, meetingDate, file }: UploadInput) => {
       if (!user) return
 
       setState({ phase: 'uploading', uploadProgress: 0, meetingId: null, error: null })
@@ -49,6 +51,8 @@ export function useUploadMeeting() {
           user_id: user.id,
           title,
           description: description ?? null,
+          participants: participants && participants.length > 0 ? participants : null,
+          meeting_date: meetingDate ?? new Date().toISOString(),
           status: 'uploading',
           file_type: file.type,
           file_size_bytes: file.size,
@@ -69,6 +73,7 @@ export function useUploadMeeting() {
           meetingId: meeting.id,
           userId: user.id,
           file,
+          participants: participants ?? [],
           onPhase: (phase: ProcessingPhase) =>
             setState((prev) => ({ ...prev, phase })),
         })
