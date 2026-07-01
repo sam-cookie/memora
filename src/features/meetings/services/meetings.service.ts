@@ -125,4 +125,9 @@ export const meetingsService = {
     if (error) throw new Error(error.message)
     return data ?? []
   },
+
+  async deleteMeeting(id: string) {
+    const { error } = await supabase.from('meetings').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+  },
 }

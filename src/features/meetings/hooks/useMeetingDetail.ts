@@ -66,6 +66,21 @@ export function useUpdateMeeting(meetingId: string) {
     mutationFn: (data: MeetingUpdate) => meetingsService.updateMeeting(meetingId, data),
     onSuccess: (updated) => {
       queryClient.setQueryData(['meeting', meetingId], updated)
+      void queryClient.invalidateQueries({ queryKey: ['meetings'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export function useDeleteMeeting() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => meetingsService.deleteMeeting(id),
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: ['meetings'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      void queryClient.removeQueries({ queryKey: ['meeting', id] })
     },
   })
 }

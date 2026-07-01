@@ -12,6 +12,8 @@ export const ROUTES = {
   meeting: (id: string) => `/meetings/${id}`,
   meetingNew: '/meetings/new',
   search: '/search',
+  actionItems: '/action-items',
+  calendar: '/calendar',
   analytics: '/analytics',
   settings: '/settings',
   settingsProfile: '/settings/profile',

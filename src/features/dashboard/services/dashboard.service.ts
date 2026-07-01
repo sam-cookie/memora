@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Meeting } from '@/types/database'
+import type { Meeting, ActionItem } from '@/types/database'
 
 export interface DashboardStats {
   totalMeetings: number
@@ -7,6 +7,10 @@ export interface DashboardStats {
   processingMeetings: number
   totalActionItems: number
   openActionItems: number
+}
+
+export interface ActionItemWithMeeting extends ActionItem {
+  meetings: { id: string; title: string } | null
 }
 
 export const dashboardService = {
@@ -39,5 +43,26 @@ export const dashboardService = {
 
     if (error) throw new Error(error.message)
     return data ?? []
+  },
+
+  async getActionItemsWithMeetings(): Promise<ActionItemWithMeeting[]> {
+    const { data, error } = await supabase
+      .from('action_items')
+      .select('*, meetings(id, title)')
+      .order('created_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as ActionItemWithMeeting[]
+  },
+
+  async getOpenActionItemsWithMeetings(): Promise<ActionItemWithMeeting[]> {
+    const { data, error } = await supabase
+      .from('action_items')
+      .select('*, meetings(id, title)')
+      .eq('completed', false)
+      .order('created_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as ActionItemWithMeeting[]
   },
 }

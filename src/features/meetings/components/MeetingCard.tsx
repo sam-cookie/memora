@@ -1,9 +1,19 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Users } from 'lucide-react'
+import { Calendar, Users, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ROUTES } from '@/config/routes'
+import { EditMeetingDialog } from './EditMeetingDialog'
+import { DeleteMeetingDialog } from './DeleteMeetingDialog'
 import type { Meeting } from '@/types/database'
 
 interface MeetingCardProps {
@@ -20,25 +30,57 @@ function formatDate(iso: string) {
 }
 
 export function MeetingCard({ meeting, index }: MeetingCardProps) {
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const displayDate = meeting.processed_at ?? meeting.created_at
   const preview = meeting.summary ?? meeting.description
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.25 }}
-    >
-      <Link
-        to={ROUTES.meeting(meeting.id)}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+    <>
+      <motion.div
+        className="group"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.04, duration: 0.25 }}
       >
-        <Card interactive className="p-5 space-y-3 h-full">
-          <div className="flex items-start justify-between gap-3">
+        <Card interactive className="relative p-5 space-y-3 h-full">
+          <div className="flex items-start justify-between gap-2">
+            {/* Title — link stretches to cover the whole card via ::after */}
             <h3 className="font-semibold text-sm leading-snug line-clamp-2 text-foreground flex-1">
-              {meeting.title}
+              <Link
+                to={ROUTES.meeting(meeting.id)}
+                className="focus-visible:outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+              >
+                {meeting.title}
+              </Link>
             </h3>
-            <StatusBadge status={meeting.status} />
+
+            {/* Actions — z-10 to sit above the ::after overlay */}
+            <div className="relative z-10 flex items-center gap-1.5 shrink-0">
+              <StatusBadge status={meeting.status} />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-surface-2 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+                  aria-label="Meeting options"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {preview && (
@@ -60,7 +102,19 @@ export function MeetingCard({ meeting, index }: MeetingCardProps) {
             )}
           </div>
         </Card>
-      </Link>
-    </motion.div>
+      </motion.div>
+
+      <EditMeetingDialog
+        meeting={meeting}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+      <DeleteMeetingDialog
+        meetingId={meeting.id}
+        meetingTitle={meeting.title}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+      />
+    </>
   )
 }

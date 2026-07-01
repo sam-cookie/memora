@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
@@ -18,6 +18,8 @@ import {
   FileText,
   List,
   Loader2,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +37,8 @@ import {
   useToggleActionItem,
   useUpdateMeeting,
 } from '../hooks/useMeetingDetail'
+import { EditMeetingDialog } from '../components/EditMeetingDialog'
+import { DeleteMeetingDialog } from '../components/DeleteMeetingDialog'
 import type {
   Meeting,
   ActionItem,
@@ -303,6 +307,10 @@ function ProcessingDoc({ status }: { status: string }) {
 export function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const meetingId = id ?? ''
+  const navigate = useNavigate()
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { data: meeting, isLoading, isError } = useMeeting(meetingId)
   const isCompleted = meeting?.status === 'completed'
@@ -385,6 +393,19 @@ export function MeetingDetailPage() {
               </Button>
             </>
           )}
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60 hover:bg-destructive/5"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -596,6 +617,19 @@ export function MeetingDetailPage() {
           )}
         </motion.article>
       )}
+
+      <EditMeetingDialog
+        meeting={meeting}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+      <DeleteMeetingDialog
+        meetingId={meeting.id}
+        meetingTitle={meeting.title}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={() => navigate(ROUTES.meetings)}
+      />
     </div>
   )
 }

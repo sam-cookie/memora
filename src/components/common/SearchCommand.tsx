@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ROUTES } from '@/config/routes'
 import { useSearch } from '@/features/search/hooks/useSearch'
-import { StatusBadge } from '@/features/meetings/components/StatusBadge'
+import { StatusBadge } from '@/components/common/StatusBadge'
 
 export function SearchCommand() {
   const [query, setQuery] = useState('')

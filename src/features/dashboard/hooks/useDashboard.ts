@@ -18,3 +18,17 @@ export function useRecentMeetings() {
     refetchInterval: 15_000,
   })
 }
+
+export function useAllActionItems() {
+  return useQuery({
+    queryKey: ['dashboard', 'all-action-items'],
+    queryFn: () => dashboardService.getActionItemsWithMeetings(),
+  })
+}
+
+export function useOpenActionItems() {
+  return useQuery({
+    queryKey: ['dashboard', 'open-action-items'],
+    queryFn: () => dashboardService.getOpenActionItemsWithMeetings(),
+  })
+}

@@ -10,6 +10,8 @@ import {
   LogOut,
   ChevronRight,
   BarChart2,
+  CheckSquare,
+  CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -29,6 +31,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: ROUTES.dashboard, exact: true },
   { label: 'Meetings', icon: Mic, to: ROUTES.meetings },
+  { label: 'Calendar', icon: CalendarDays, to: ROUTES.calendar },
+  { label: 'Action Items', icon: CheckSquare, to: ROUTES.actionItems },
   { label: 'Analytics', icon: BarChart2, to: ROUTES.analytics },
   { label: 'Upload', icon: Upload, to: ROUTES.meetingNew },
   { label: 'Settings', icon: Settings, to: ROUTES.settings },
