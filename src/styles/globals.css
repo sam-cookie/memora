@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design Tokens — Memora Dark Theme
+   ============================================================ */
+@layer base {
+  :root {
+    /* Base surfaces — near-black with a hint of blue-violet */
+    --background: 230 15% 6%;
+    --foreground: 220 14% 96%;
+
+    /* Surface elevation stack */
+    --surface-0: 230 15% 6%;
+    --surface-1: 228 14% 9%;
+    --surface-2: 228 13% 12%;
+    --surface-3: 226 12% 16%;
+
+    /* Card */
+    --card: 228 14% 9%;
+    --card-foreground: 220 14% 96%;
+
+    /* Popover */
+    --popover: 228 13% 12%;
+    --popover-foreground: 220 14% 96%;
+
+    /* Brand — electric indigo-violet */
+    --brand-50: 245 100% 98%;
+    --brand-100: 245 87% 94%;
+    --brand-200: 245 80% 88%;
+    --brand-300: 245 74% 78%;
+    --brand-400: 245 70% 65%;
+    --brand-500: 245 66% 55%;
+    --brand-600: 245 62% 46%;
+    --brand-700: 245 58% 38%;
+    --brand-800: 245 54% 30%;
+    --brand-900: 245 50% 22%;
+    --brand-950: 245 46% 13%;
+
+    /* Primary — brand indigo */
+    --primary: 245 66% 60%;
+    --primary-foreground: 245 100% 98%;
+
+    /* Secondary — muted surface */
+    --secondary: 228 13% 14%;
+    --secondary-foreground: 220 10% 75%;
+
+    /* Muted */
+    --muted: 228 12% 13%;
+    --muted-foreground: 220 8% 55%;
+
+    /* Accent — electric cyan */
+    --accent: 195 90% 50%;
+    --accent-foreground: 195 100% 5%;
+
+    /* Destructive — rose */
+    --destructive: 355 82% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Semantic */
+    --success: 152 70% 45%;
+    --success-foreground: 152 100% 5%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 100% 5%;
+    --info: 210 85% 58%;
+    --info-foreground: 210 100% 5%;
+
+    /* Borders and inputs */
+    --border: 228 12% 16%;
+    --input: 228 12% 14%;
+    --ring: 245 66% 60%;
+
+    /* Radius */
+    --radius: 0.625rem;
+  }
+
+  /* Light theme override (if ever needed) */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
+
+    --surface-0: 0 0% 100%;
+    --surface-1: 220 14% 97%;
+    --surface-2: 220 13% 94%;
+    --surface-3: 220 12% 90%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    --primary: 245 66% 55%;
+    --primary-foreground: 245 100% 98%;
+
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 9% 14%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 195 80% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 355 82% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 65% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 88% 48%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 80% 52%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 14% 88%;
+    --input: 220 14% 90%;
+    --ring: 245 66% 55%;
+  }
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full;
+    background-color: hsl(var(--border));
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Code */
+  code, pre {
+    @apply font-mono;
+  }
+}
+
+/* ============================================================
+   Component Utilities
+   ============================================================ */
+@layer components {
+  /* Glass morphism surface */
+  .glass {
+    @apply border border-white/[0.06] shadow-glass;
+    background: hsl(var(--surface-2) / 0.8);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  .glass-subtle {
+    @apply border border-white/[0.04];
+    background: hsl(var(--surface-1) / 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+
+  .text-gradient-brand {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(245 80% 75%), hsl(245 70% 55%));
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px -4px hsl(var(--primary) / 0.5);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px -4px hsl(var(--accent) / 0.4);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md;
+    background: hsl(var(--surface-2));
+  }
+
+  .skeleton::after {
+    @apply absolute inset-0;
+    content: '';
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--surface-3) / 0.5),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Page transitions */
+  .page-enter {
+    @apply animate-fade-in;
+  }
+
+  /* Status dot */
+  .status-dot {
+    @apply inline-block h-2 w-2 rounded-full;
+  }
+
+  /* Truncate text */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* ============================================================
+   Utility Overrides
+   ============================================================ */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
