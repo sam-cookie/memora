@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from 'react-router-dom'
@@ -5,6 +6,7 @@ import { ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/common/FormField'
 import { PasswordInput } from '../components/PasswordInput'
+import { PageLoader } from '@/components/common/PageLoader'
 import { resetPasswordSchema, type ResetPasswordFormData } from '../schemas/auth.schemas'
 import { useResetPassword } from '../hooks/useResetPassword'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,6 +15,26 @@ import { ROUTES } from '@/config/routes'
 export function ResetPasswordPage() {
   const { isRecoveryMode } = useAuth()
   const { mutate: resetPassword, isPending } = useResetPassword()
+
+  // PKCE flow: the URL contains a `code` param that Supabase exchanges
+  // asynchronously. Show a loader while waiting for the PASSWORD_RECOVERY event
+  // instead of flashing "Link expired". Fall back to the error state after 8s
+  // in case the code is invalid and the event never fires.
+  const [awaitingRecovery, setAwaitingRecovery] = useState(
+    () => !isRecoveryMode && new URLSearchParams(window.location.search).has('code'),
+  )
+
+  useEffect(() => {
+    if (!awaitingRecovery) return
+    if (isRecoveryMode) {
+      setAwaitingRecovery(false)
+      return
+    }
+    const timeout = setTimeout(() => setAwaitingRecovery(false), 8000)
+    return () => clearTimeout(timeout)
+  }, [isRecoveryMode, awaitingRecovery])
+
+  if (awaitingRecovery) return <PageLoader />
 
   const {
     register,

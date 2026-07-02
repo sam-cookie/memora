@@ -25,7 +25,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   // Tracks when a user arrives via a password-recovery link so AuthLayout
   // does not prematurely redirect them away from the reset-password page.
-  const [isRecoveryMode, setIsRecoveryMode] = useState(false)
+  // Initialize from the URL hash immediately to cover the implicit grant flow
+  // where Supabase appends `#access_token=...&type=recovery` before JS runs.
+  const [isRecoveryMode, setIsRecoveryMode] = useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1))
+    return hashParams.get('type') === 'recovery'
+  })
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {

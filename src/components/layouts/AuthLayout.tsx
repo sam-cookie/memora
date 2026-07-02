@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom'
+import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import memoraLogo from '@/assets/memora.png'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
@@ -7,10 +7,15 @@ import { PageLoader } from '@/components/common/PageLoader'
 
 export function AuthLayout() {
   const { isAuthenticated, isLoading, isRecoveryMode } = useAuth()
+  const location = useLocation()
 
   if (isLoading) return <PageLoader />
 
-  if (isAuthenticated && !isRecoveryMode) return <Navigate to={ROUTES.dashboard} replace />
+  // Never redirect away from /reset-password — the page itself guards the form
+  // behind isRecoveryMode, and PASSWORD_RECOVERY may not have fired yet.
+  if (isAuthenticated && !isRecoveryMode && location.pathname !== ROUTES.resetPassword) {
+    return <Navigate to={ROUTES.dashboard} replace />
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-1 p-4">
