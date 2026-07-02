@@ -19,7 +19,7 @@ const buttonVariants = cva(
         ghost: 'hover:bg-surface-2 hover:text-foreground active:scale-[0.98]',
         link: 'text-primary underline-offset-4 hover:underline',
         brand:
-          'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:scale-[0.98]',
+          'bg-gradient-to-b from-brand-500 to-brand-600 text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_1px_3px_rgba(0,0,0,0.18)] hover:from-brand-400 hover:to-brand-500 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_4px_18px_-2px_rgba(59,130,246,0.45)] active:scale-[0.98] active:from-brand-600 active:to-brand-700 transition-all duration-200',
         glass:
           'glass text-foreground hover:bg-surface-2 active:scale-[0.98]',
       },

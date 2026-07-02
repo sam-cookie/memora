@@ -8,6 +8,9 @@ import { lazy, Suspense } from 'react'
 import { PageLoader } from '@/components/common/PageLoader'
 
 // Lazy-loaded pages
+const LandingPage = lazy(() =>
+  import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+)
 const LoginPage = lazy(() =>
   import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
 )
@@ -66,6 +69,9 @@ function withSuspense(Component: React.ComponentType) {
 }
 
 export const router = createBrowserRouter([
+  // Public landing page — handles its own auth redirect
+  { path: ROUTES.home, element: withSuspense(LandingPage) },
+
   // Auth routes
   {
     element: <AuthLayout />,
@@ -76,6 +82,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.resetPassword, element: withSuspense(ResetPasswordPage) },
     ],
   },
+
   // Protected app routes
   {
     element: (
@@ -84,7 +91,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: ROUTES.home, element: withSuspense(DashboardPage) },
       { path: ROUTES.dashboard, element: withSuspense(DashboardPage) },
       { path: ROUTES.meetings, element: withSuspense(MeetingsPage) },
       { path: '/meetings/:id', element: withSuspense(MeetingDetailPage) },
@@ -100,6 +106,7 @@ export const router = createBrowserRouter([
       { path: `${ROUTES.participants}/:id`, element: withSuspense(ParticipantProfilePage) },
     ],
   },
+
   // Catch-all
   { path: '*', element: <NotFoundPage /> },
 ])
