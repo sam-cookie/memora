@@ -16,7 +16,8 @@ const ACCEPTED: Record<string, string[]> = {
 }
 
 const ACCEPT_ATTR = [...new Set(Object.values(ACCEPTED).flat())].join(',')
-const MAX_BYTES = 500 * 1024 * 1024
+// Groq Whisper API hard limit
+const MAX_BYTES = 25 * 1024 * 1024
 
 function getFileIcon(file: File) {
   if (file.type === 'text/plain') return FileText
@@ -29,7 +30,7 @@ function validate(file: File): string | null {
     ([mime, exts]) => file.type === mime || exts.includes(ext),
   )
   if (!accepted) return 'Unsupported file type. Use MP3, WAV, M4A, or TXT.'
-  if (file.size > MAX_BYTES) return 'File exceeds the 500 MB limit.'
+  if (file.size > MAX_BYTES) return 'File exceeds the 25 MB limit. Compress the audio or trim it before uploading.'
   return null
 }
 
@@ -133,7 +134,7 @@ export function FileDropzone({ value, onChange, error, disabled }: FileDropzoneP
         <Upload className="h-8 w-8 text-muted-foreground" />
         <div>
           <p className="text-sm font-medium">Drop your file here or click to browse</p>
-          <p className="mt-1 text-xs text-muted-foreground">MP3, WAV, M4A, TXT — max 500 MB</p>
+          <p className="mt-1 text-xs text-muted-foreground">MP3, WAV, M4A, TXT — max 25 MB</p>
         </div>
       </div>
 

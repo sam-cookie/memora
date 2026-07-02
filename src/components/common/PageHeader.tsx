@@ -17,7 +17,7 @@ export function PageHeader({ title, description, icon: Icon, actions, className 
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={cn('flex items-start justify-between gap-4 px-6 py-5 border-b border-border/50', className)}
+      className={cn('flex items-start justify-between gap-4 px-[clamp(1rem,3vw,1.5rem)] py-[clamp(0.875rem,2vh,1.25rem)] border-b border-border/50', className)}
     >
       <div className="flex items-center gap-3 min-w-0">
         {Icon && (

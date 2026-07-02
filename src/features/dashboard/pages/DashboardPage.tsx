@@ -348,7 +348,7 @@ export function DashboardPage() {
     <>
     <NewMeetingDialog open={newMeetingOpen} onOpenChange={setNewMeetingOpen} />
     <div className="min-h-full bg-background">
-      <div className="mx-auto max-w-6xl px-8 py-10 space-y-10">
+      <div className="px-[clamp(1.5rem,5vw,4rem)] py-[clamp(1.5rem,3vh,2.5rem)] space-y-8">
 
         {/* ── Greeting ─────────────────────────────────────────────── */}
         <motion.div
@@ -370,7 +370,7 @@ export function DashboardPage() {
         </motion.div>
 
         {/* ── Stats ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-stats gap-4">
           {cardData.map((card, i) => (
             <StatCardHero
               key={card.label}
@@ -382,7 +382,7 @@ export function DashboardPage() {
         </div>
 
         {/* ── Two-column body ───────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
+        <div className="grid grid-cols-1 gap-[clamp(1.5rem,3vw,2.5rem)] lg:grid-cols-[1fr_minmax(280px,360px)]">
 
           {/* Recent Meetings */}
           <section className="space-y-4">

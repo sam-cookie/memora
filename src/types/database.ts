@@ -32,12 +32,39 @@ export interface Database {
           timezone?: string
         }
       }
+      folders: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          user_id: string
+          name: string
+          color: FolderColor
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          name: string
+          color?: FolderColor
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          name?: string
+          color?: FolderColor
+        }
+      }
       meetings: {
         Row: {
           id: string
           created_at: string
           updated_at: string
           user_id: string
+          folder_id: string | null
           title: string
           description: string | null
           status: MeetingStatus
@@ -52,12 +79,14 @@ export interface Database {
           tags: string[] | null
           meeting_date: string | null
           processed_at: string | null
+          ai_analysis: Json | null
         }
         Insert: {
           id?: string
           created_at?: string
           updated_at?: string
           user_id: string
+          folder_id?: string | null
           title: string
           description?: string | null
           status?: MeetingStatus
@@ -72,12 +101,14 @@ export interface Database {
           tags?: string[] | null
           meeting_date?: string | null
           processed_at?: string | null
+          ai_analysis?: Json | null
         }
         Update: {
           id?: string
           created_at?: string
           updated_at?: string
           user_id?: string
+          folder_id?: string | null
           title?: string
           description?: string | null
           status?: MeetingStatus
@@ -92,6 +123,7 @@ export interface Database {
           tags?: string[] | null
           meeting_date?: string | null
           processed_at?: string | null
+          ai_analysis?: Json | null
         }
       }
       action_items: {
@@ -243,6 +275,7 @@ export interface Database {
       meeting_status: MeetingStatus
       action_item_priority: ActionItemPriority
       risk_severity: RiskSeverity
+      folder_color: FolderColor
     }
   }
 }
@@ -250,9 +283,12 @@ export interface Database {
 export type MeetingStatus = 'pending' | 'uploading' | 'transcribing' | 'analyzing' | 'completed' | 'failed'
 export type ActionItemPriority = 'low' | 'medium' | 'high' | 'critical'
 export type RiskSeverity = 'low' | 'medium' | 'high' | 'critical'
+export type FolderColor = 'gray' | 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'pink'
 
 // Convenience row types
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Folder = Database['public']['Tables']['folders']['Row']
+export type FolderUpdate = Database['public']['Tables']['folders']['Update']
 export type Meeting = Database['public']['Tables']['meetings']['Row']
 export type MeetingUpdate = Database['public']['Tables']['meetings']['Update']
 export type ActionItem = Database['public']['Tables']['action_items']['Row']
@@ -260,3 +296,13 @@ export type KeyDecision = Database['public']['Tables']['key_decisions']['Row']
 export type Risk = Database['public']['Tables']['risks']['Row']
 export type FollowUpQuestion = Database['public']['Tables']['follow_up_questions']['Row']
 export type Participant = Database['public']['Tables']['participants']['Row']
+
+export const FOLDER_COLORS: { value: FolderColor; dotClass: string; iconClass: string }[] = [
+  { value: 'gray',   dotClass: 'bg-slate-400',   iconClass: 'text-slate-400' },
+  { value: 'blue',   dotClass: 'bg-blue-500',    iconClass: 'text-blue-500' },
+  { value: 'green',  dotClass: 'bg-emerald-500', iconClass: 'text-emerald-500' },
+  { value: 'purple', dotClass: 'bg-purple-500',  iconClass: 'text-purple-500' },
+  { value: 'orange', dotClass: 'bg-orange-500',  iconClass: 'text-orange-500' },
+  { value: 'red',    dotClass: 'bg-red-500',      iconClass: 'text-red-500' },
+  { value: 'pink',   dotClass: 'bg-pink-500',     iconClass: 'text-pink-500' },
+]

@@ -3,6 +3,7 @@ import { transcriptionService } from '@/features/ai/services/transcription.servi
 import { analysisService } from '@/features/ai/services/analysis.service'
 import { meetingsService } from './meetings.service'
 import type { MeetingStatus } from '@/types/database'
+import type { Json } from '@/types/database'
 
 export type ProcessingPhase = 'transcribing' | 'analyzing' | 'saving'
 
@@ -43,10 +44,12 @@ export const meetingProcessingService = {
 
     await meetingsService.updateMeeting(meetingId, {
       status: 'completed',
-      summary: analysis.summary,
-      key_points: analysis.keyPoints,
+      summary: analysis.executiveSummary.paragraph,
+      key_points: analysis.keyPoints.length > 0 ? analysis.keyPoints : null,
       participants: merged.length > 0 ? merged : null,
       processed_at: new Date().toISOString(),
+      // Store the full rich analysis for the premium UI
+      ai_analysis: analysis as unknown as Json,
     })
 
     // Insert related records; skip empty arrays to avoid no-op DB calls
@@ -61,6 +64,8 @@ export const meetingProcessingService = {
             content: item.content,
             assignee: item.assignee,
             priority: item.priority,
+            due_date: item.dueDate ?? null,
+            completed: item.status === 'completed',
           })),
         ),
       )
@@ -92,10 +97,10 @@ export const meetingProcessingService = {
       )
     }
 
-    if (analysis.followUpQuestions.length > 0) {
+    if (analysis.openQuestions.length > 0) {
       saves.push(
         supabase.from('follow_up_questions').insert(
-          analysis.followUpQuestions.map((q) => ({
+          analysis.openQuestions.map((q) => ({
             meeting_id: meetingId,
             user_id: userId,
             question: q,
