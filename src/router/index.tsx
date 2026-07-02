@@ -47,6 +47,15 @@ const ActionItemsPage = lazy(() =>
 const CalendarPage = lazy(() =>
   import('@/features/calendar/pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 )
+const WorkspacesPage = lazy(() =>
+  import('@/features/workspaces/pages/WorkspacesPage').then((m) => ({ default: m.WorkspacesPage })),
+)
+const ParticipantsPage = lazy(() =>
+  import('@/features/participants/pages/ParticipantsPage').then((m) => ({ default: m.ParticipantsPage })),
+)
+const ParticipantProfilePage = lazy(() =>
+  import('@/features/participants/pages/ParticipantProfilePage').then((m) => ({ default: m.ParticipantProfilePage })),
+)
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -86,6 +95,9 @@ export const router = createBrowserRouter([
       { path: ROUTES.analytics, element: withSuspense(AnalyticsPage) },
       { path: ROUTES.settings, element: withSuspense(SettingsPage) },
       { path: `${ROUTES.settings}/:tab`, element: withSuspense(SettingsPage) },
+      { path: ROUTES.workspaces, element: withSuspense(WorkspacesPage) },
+      { path: ROUTES.participants, element: withSuspense(ParticipantsPage) },
+      { path: `${ROUTES.participants}/:id`, element: withSuspense(ParticipantProfilePage) },
     ],
   },
   // Catch-all

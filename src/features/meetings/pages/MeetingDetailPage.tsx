@@ -49,10 +49,12 @@ import {
   useFollowUpQuestions,
   useToggleActionItem,
   useUpdateMeeting,
+  useMeetingContacts,
 } from '../hooks/useMeetingDetail'
 import { useExportPDF } from '../hooks/useExportPDF'
 import { EditMeetingDialog } from '../components/EditMeetingDialog'
 import { DeleteMeetingDialog } from '../components/DeleteMeetingDialog'
+import { ReviewParticipantsPanel } from '../components/ReviewParticipantsPanel'
 import type {
   Meeting,
   ActionItem,
@@ -953,6 +955,9 @@ export function MeetingDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [reviewDismissed, setReviewDismissed] = useState(
+    () => !!localStorage.getItem(`participants-reviewed-${meetingId}`),
+  )
 
   const { data: meeting, isLoading, isError } = useMeeting(meetingId)
   const isCompleted = meeting?.status === 'completed'
@@ -965,9 +970,15 @@ export function MeetingDetailPage() {
   const { data: decisions = [] } = useDecisions(meetingId, isCompleted)
   const { data: risks = [] } = useRisks(meetingId, isCompleted)
   const { data: questions = [] } = useFollowUpQuestions(meetingId, isCompleted)
+  const { data: meetingContacts = [] } = useMeetingContacts(meetingId)
   const toggle = useToggleActionItem(meetingId)
   const update = useUpdateMeeting(meetingId)
   const { exportPDF, isExporting } = useExportPDF()
+
+  function handleDismissReview() {
+    localStorage.setItem(`participants-reviewed-${meetingId}`, '1')
+    setReviewDismissed(true)
+  }
 
   function handleExportMarkdown() {
     if (!meeting) return
@@ -1095,18 +1106,37 @@ export function MeetingDetailPage() {
                   {formatDuration(meeting.duration_seconds)}
                 </span>
               )}
-              {meeting.participants && meeting.participants.length > 0 && (
-                <span className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 shrink-0" />
-                  <span className="flex flex-wrap gap-1.5">
-                    {meeting.participants.map((name) => (
-                      <Badge key={name} variant="secondary" className="text-xs font-normal">
-                        {name}
-                      </Badge>
-                    ))}
+              {meeting.participants && meeting.participants.length > 0 && (() => {
+                const linkedNames = new Set(meetingContacts.map((mc) => mc.contact.name.toLowerCase()))
+                const unlinked = meeting.participants.filter(
+                  (n) => !linkedNames.has(n.toLowerCase()),
+                )
+                return (
+                  <span className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5 shrink-0" />
+                    <span className="flex flex-wrap gap-1.5">
+                      {meetingContacts.map((mc) => (
+                        <Link
+                          key={mc.contact_id}
+                          to={ROUTES.participant(mc.contact_id)}
+                          className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                          title="View contact profile"
+                        >
+                          <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shrink-0">
+                            {mc.contact.name.charAt(0).toUpperCase()}
+                          </span>
+                          {mc.contact.name}
+                        </Link>
+                      ))}
+                      {unlinked.map((name) => (
+                        <Badge key={name} variant="secondary" className="text-xs font-normal">
+                          {name}
+                        </Badge>
+                      ))}
+                    </span>
                   </span>
-                </span>
-              )}
+                )
+              })()}
               {aiAnalysis && (
                 <OverallStatusBadge status={aiAnalysis.executiveSummary.status} />
               )}
@@ -1116,6 +1146,16 @@ export function MeetingDetailPage() {
           {/* Premium layout (when ai_analysis exists) */}
           {aiAnalysis ? (
             <div className="space-y-6">
+              {/* Participant review panel — shown until dismissed or all linked */}
+              {!reviewDismissed && meeting.participants && meeting.participants.length > 0 && (
+                <ReviewParticipantsPanel
+                  meetingId={meetingId}
+                  allParticipantNames={meeting.participants}
+                  linkedContacts={meetingContacts}
+                  onDismiss={handleDismissReview}
+                />
+              )}
+
               <ExecutiveSummaryCard summary={aiAnalysis.executiveSummary} />
 
               {aiAnalysis.discussionTopics.length > 0 && (

@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/common/FormField'
 import { FileDropzone } from './FileDropzone'
 import { UploadProgress } from './UploadProgress'
-import { ParticipantInput } from './ParticipantInput'
+import { ParticipantCombobox } from './ParticipantCombobox'
 import { useUploadMeeting } from '../hooks/useUploadMeeting'
+import type { ParticipantEntry } from '../types'
 import { ROUTES } from '@/config/routes'
 
 const schema = z.object({
@@ -36,7 +37,7 @@ export function NewMeetingForm({ onSuccess, onCancel, isDialog = false }: NewMee
   const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
-  const [participants, setParticipants] = useState<string[]>([])
+  const [participants, setParticipants] = useState<ParticipantEntry[]>([])
   const { phase, uploadProgress, meetingId, error, upload, reset } = useUploadMeeting()
 
   const {
@@ -65,7 +66,13 @@ export function NewMeetingForm({ onSuccess, onCancel, isDialog = false }: NewMee
     const meetingDate = data.meeting_date
       ? new Date(data.meeting_date).toISOString()
       : new Date().toISOString()
-    await upload({ title: data.title, description: data.description, file, participants, meetingDate })
+    await upload({
+      title: data.title,
+      description: data.description,
+      file,
+      participants,
+      meetingDate,
+    })
   }
 
   const handleReset = () => {
@@ -135,7 +142,7 @@ export function NewMeetingForm({ onSuccess, onCancel, isDialog = false }: NewMee
             Optional
           </span>
         </div>
-        <ParticipantInput value={participants} onChange={setParticipants} disabled={isProcessing} />
+        <ParticipantCombobox value={participants} onChange={setParticipants} disabled={isProcessing} />
         <p className="text-xs text-muted-foreground">
           Optional — AI will also detect participants from the transcript.
         </p>

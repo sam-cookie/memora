@@ -12,6 +12,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -21,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { generateInitials, truncate } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import memoraLogo from '@/assets/memora.png'
+import { WorkspaceSwitcher } from '@/features/workspaces/components/WorkspaceSwitcher'
 
 interface NavItem {
   label: string
@@ -34,6 +36,7 @@ const PRIMARY_NAV: NavItem[] = [
   { label: 'Meetings', icon: Mic, to: ROUTES.meetings },
   { label: 'Calendar', icon: CalendarDays, to: ROUTES.calendar },
   { label: 'Action Items', icon: CheckSquare, to: ROUTES.actionItems },
+  { label: 'Participants', icon: Users, to: ROUTES.participants },
   { label: 'Analytics', icon: BarChart2, to: ROUTES.analytics },
 ]
 
@@ -156,8 +159,13 @@ function SidebarContent({
         )}
       </div>
 
+      {/* Workspace Switcher */}
+      <div className={cn('px-2 pt-2 pb-1', collapsed ? 'px-2' : 'px-3')}>
+        <WorkspaceSwitcher collapsed={collapsed} onClose={isMobile ? onClose : undefined} />
+      </div>
+
       {/* New Meeting CTA */}
-      <div className={cn('pt-4 pb-2', collapsed ? 'px-2' : 'px-3')}>
+      <div className={cn('pt-2 pb-2', collapsed ? 'px-2' : 'px-3')}>
         <TooltipProvider delayDuration={0}>
           <Tooltip disableHoverableContent>
             <TooltipTrigger asChild>

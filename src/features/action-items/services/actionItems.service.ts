@@ -6,12 +6,16 @@ export interface ActionItemWithMeeting extends ActionItem {
 }
 
 export const actionItemsService = {
-  async getAll(): Promise<ActionItemWithMeeting[]> {
-    const { data, error } = await supabase
+  async getAll(workspaceId?: string | null): Promise<ActionItemWithMeeting[]> {
+    const joinType = workspaceId ? 'meetings!inner' : 'meetings'
+    let query = supabase
       .from('action_items')
-      .select('*, meetings(id, title)')
+      .select(`*, ${joinType}(id, title, workspace_id)`)
       .order('created_at', { ascending: false })
 
+    if (workspaceId) query = query.eq('meetings.workspace_id', workspaceId)
+
+    const { data, error } = await query
     if (error) throw new Error(error.message)
     return (data ?? []) as ActionItemWithMeeting[]
   },

@@ -6,6 +6,7 @@ import {
   Mic,
   CheckCircle2,
   ListTodo,
+  Users,
   Plus,
   ArrowRight,
   Loader2,
@@ -14,6 +15,7 @@ import {
   Trash2,
   Check,
   ListChecks,
+  Gavel,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -35,9 +37,14 @@ import { useToggleActionItem } from '@/features/action-items/hooks/useActionItem
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/config/routes'
-import { useDashboardStats, useRecentMeetings, useOpenActionItems } from '../hooks/useDashboard'
+import {
+  useDashboardStats,
+  useRecentMeetings,
+  useOpenActionItems,
+  useRecentDecisions,
+} from '../hooks/useDashboard'
 import type { Meeting, ActionItemPriority } from '@/types/database'
-import type { ActionItemWithMeeting } from '../services/dashboard.service'
+import type { ActionItemWithMeeting, RecentDecision } from '../services/dashboard.service'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,12 +85,13 @@ const PRIORITY_VARIANT: Record<ActionItemPriority, 'secondary' | 'warning' | 'de
 
 // ─── Stat Card Design System ──────────────────────────────────────────────────
 
-type CardColor = 'blue' | 'green' | 'amber'
+type CardColor = 'blue' | 'green' | 'amber' | 'purple'
 
 const COLOR_CONFIG = {
-  blue:  { iconBg: 'bg-blue-50 dark:bg-blue-950/40',    iconText: 'text-blue-600 dark:text-blue-400' },
-  green: { iconBg: 'bg-emerald-50 dark:bg-emerald-950/40', iconText: 'text-emerald-600 dark:text-emerald-400' },
-  amber: { iconBg: 'bg-amber-50 dark:bg-amber-950/40',  iconText: 'text-amber-600 dark:text-amber-400' },
+  blue:   { iconBg: 'bg-blue-50 dark:bg-blue-950/40',      iconText: 'text-blue-600 dark:text-blue-400' },
+  green:  { iconBg: 'bg-emerald-50 dark:bg-emerald-950/40', iconText: 'text-emerald-600 dark:text-emerald-400' },
+  amber:  { iconBg: 'bg-amber-50 dark:bg-amber-950/40',    iconText: 'text-amber-600 dark:text-amber-400' },
+  purple: { iconBg: 'bg-purple-50 dark:bg-purple-950/40',  iconText: 'text-purple-600 dark:text-purple-400' },
 } as const
 
 interface CardConfig {
@@ -98,10 +106,6 @@ interface CardConfig {
   index: number
   onClick?: () => void
 }
-
-// ─── Stat Card: Hero Metric ───────────────────────────────────────────────────
-// Number dominates. Icon sits top-right as a soft accent.
-// Inspired by Linear / Apple Business.
 
 function StatCardHero({
   icon: Icon, value, label, sub, color, pulse, isLoading, index, onClick,
@@ -124,7 +128,6 @@ function StatCardHero({
           onClick && 'hover:shadow-card-md hover:-translate-y-px',
         )}>
 
-          {/* Metric + icon row */}
           <div className="flex items-start justify-between mb-3">
             {isLoading ? (
               <Skeleton className="h-12 w-20" />
@@ -146,7 +149,6 @@ function StatCardHero({
             </div>
           </div>
 
-          {/* Label */}
           {isLoading ? (
             <Skeleton className="h-4 w-28 mb-4" />
           ) : (
@@ -155,7 +157,6 @@ function StatCardHero({
 
           <Separator />
 
-          {/* Sub */}
           <div className="pt-3">
             {isLoading ? (
               <Skeleton className="h-3.5 w-24" />
@@ -297,6 +298,45 @@ function OpenTaskSkeleton() {
   )
 }
 
+// ─── Decision Row ─────────────────────────────────────────────────────────────
+
+function DecisionRow({ decision, index }: { decision: RecentDecision; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.25 }}
+      className="py-3 space-y-1"
+    >
+      <p className="text-sm text-foreground leading-snug line-clamp-2">{decision.content}</p>
+      <div className="flex items-center gap-2 flex-wrap">
+        {decision.meetings && (
+          <Link
+            to={ROUTES.meeting(decision.meetings.id)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline truncate max-w-[180px]"
+          >
+            {decision.meetings.title}
+          </Link>
+        )}
+        {decision.meetings && (
+          <span className="text-xs text-muted-foreground/60">
+            {formatDate(decision.meetings.created_at)}
+          </span>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+function DecisionSkeleton() {
+  return (
+    <div className="py-3 space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-3 w-32" />
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
@@ -306,15 +346,15 @@ export function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: recentMeetings, isLoading: meetingsLoading } = useRecentMeetings()
   const { data: openTasks = [], isLoading: tasksLoading } = useOpenActionItems()
+  const { data: recentDecisions = [], isLoading: decisionsLoading } = useRecentDecisions()
 
   const firstName =
     (user?.user_metadata?.['full_name'] as string | undefined)?.split(' ')[0] ??
     user?.email?.split('@')[0] ??
     'there'
 
-  const previewTasks = openTasks.slice(0, 6)
+  const previewTasks = openTasks.slice(0, 4)
 
-  // Shared card data — used by all 3 variants
   const cardData: Omit<CardConfig, 'isLoading' | 'index'>[] = [
     {
       icon: Mic,
@@ -322,7 +362,6 @@ export function DashboardPage() {
       value: stats?.totalMeetings,
       label: 'Total Meetings',
       sub: stats?.processingMeetings ? `${stats.processingMeetings} in progress` : 'All time',
-      trend: stats?.totalMeetings ? 'Updated recently' : undefined,
       pulse: (stats?.processingMeetings ?? 0) > 0,
       onClick: () => navigate(ROUTES.meetings),
     },
@@ -332,7 +371,6 @@ export function DashboardPage() {
       value: stats?.completedMeetings,
       label: 'Completed',
       sub: 'Successfully analyzed',
-      trend: stats?.completedMeetings ? 'Ready to review' : undefined,
     },
     {
       icon: ListTodo,
@@ -341,6 +379,14 @@ export function DashboardPage() {
       label: 'Open Tasks',
       sub: stats?.openActionItems === 0 ? 'All caught up' : 'Needs attention',
       onClick: () => navigate(`${ROUTES.actionItems}?filter=open`),
+    },
+    {
+      icon: Users,
+      color: 'purple',
+      value: stats?.participantCount,
+      label: 'Participants',
+      sub: 'In this workspace',
+      onClick: () => navigate(ROUTES.participants),
     },
   ]
 
@@ -355,7 +401,7 @@ export function DashboardPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex items-end justify-between gap-4"
+          className="flex items-end justify-between gap-4 flex-wrap"
         >
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -363,10 +409,12 @@ export function DashboardPage() {
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">{todayLabel()}</p>
           </div>
-          <Button className="shrink-0 shadow-sm gap-2" onClick={() => setNewMeetingOpen(true)}>
-            <Plus className="h-4 w-4" />
-            New Meeting
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button className="shrink-0 shadow-sm gap-2" onClick={() => setNewMeetingOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New Meeting
+            </Button>
+          </div>
         </motion.div>
 
         {/* ── Stats ────────────────────────────────────────────────── */}
@@ -424,64 +472,105 @@ export function DashboardPage() {
             </Card>
           </section>
 
-          {/* Open Tasks */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Open Tasks</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {tasksLoading ? 'Loading…' : `${openTasks.length} item${openTasks.length !== 1 ? 's' : ''} remaining`}
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" asChild className="text-xs gap-1 text-muted-foreground hover:text-foreground">
-                <Link to={`${ROUTES.actionItems}?filter=open`}>
-                  View all
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </Button>
-            </div>
+          {/* Right column: Open Tasks + Recent Decisions stacked */}
+          <div className="space-y-6">
 
-            <Card className="px-4 py-2">
-              {tasksLoading ? (
-                <div className="divide-y divide-border/40">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <OpenTaskSkeleton key={i} />
-                  ))}
+            {/* Open Tasks */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Open Tasks</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {tasksLoading ? 'Loading...' : `${openTasks.length} item${openTasks.length !== 1 ? 's' : ''} remaining`}
+                  </p>
                 </div>
-              ) : openTasks.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-10 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">All caught up!</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">No open tasks right now.</p>
-                  </div>
-                </div>
-              ) : (
-                <>
+                <Button variant="ghost" size="sm" asChild className="text-xs gap-1 text-muted-foreground hover:text-foreground">
+                  <Link to={`${ROUTES.actionItems}?filter=open`}>
+                    View all
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+
+              <Card className="px-4 py-2">
+                {tasksLoading ? (
                   <div className="divide-y divide-border/40">
-                    {previewTasks.map((item, i) => (
-                      <OpenTaskRow key={item.id} item={item} index={i} />
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <OpenTaskSkeleton key={i} />
                     ))}
                   </div>
-                  {openTasks.length > 6 && (
-                    <>
-                      <Separator className="my-1" />
-                      <div className="py-2 text-center">
-                        <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground gap-1.5">
-                          <Link to={`${ROUTES.actionItems}?filter=open`}>
-                            <ListChecks className="h-3.5 w-3.5" />
-                            {openTasks.length - 6} more task{openTasks.length - 6 !== 1 ? 's' : ''}
-                          </Link>
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </Card>
-          </section>
+                ) : openTasks.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-8 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">All caught up!</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">No open tasks right now.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="divide-y divide-border/40">
+                      {previewTasks.map((item, i) => (
+                        <OpenTaskRow key={item.id} item={item} index={i} />
+                      ))}
+                    </div>
+                    {openTasks.length > 4 && (
+                      <>
+                        <Separator className="my-1" />
+                        <div className="py-2 text-center">
+                          <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground gap-1.5">
+                            <Link to={`${ROUTES.actionItems}?filter=open`}>
+                              <ListChecks className="h-3.5 w-3.5" />
+                              {openTasks.length - 4} more task{openTasks.length - 4 !== 1 ? 's' : ''}
+                            </Link>
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </Card>
+            </section>
+
+            {/* Recent Decisions */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Recent Decisions</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Key decisions from your meetings</p>
+              </div>
+
+              <Card className="px-4 py-2">
+                {decisionsLoading ? (
+                  <div className="divide-y divide-border/40">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <DecisionSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : recentDecisions.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-8 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Gavel className="h-5 w-5 text-primary/60" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">No decisions yet</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Decisions appear after meetings are analyzed.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/40">
+                    {recentDecisions.map((decision, i) => (
+                      <DecisionRow key={decision.id} decision={decision} index={i} />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </section>
+
+          </div>
         </div>
       </div>
     </div>

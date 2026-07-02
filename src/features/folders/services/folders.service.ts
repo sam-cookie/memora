@@ -4,18 +4,21 @@ import type { Database, FolderColor } from '@/types/database'
 type FolderInsert = Database['public']['Tables']['folders']['Insert']
 
 export const foldersService = {
-  async getFolders() {
-    const { data, error } = await supabase
+  async getFolders(workspaceId?: string | null) {
+    let query = supabase
       .from('folders')
       .select('*')
       .order('created_at', { ascending: true })
 
+    if (workspaceId) query = query.eq('workspace_id', workspaceId)
+
+    const { data, error } = await query
     if (error) throw new Error(error.message)
     return data ?? []
   },
 
-  async createFolder(name: string, color: FolderColor, userId: string) {
-    const payload: FolderInsert = { name, color, user_id: userId }
+  async createFolder(name: string, color: FolderColor, userId: string, workspaceId?: string | null) {
+    const payload: FolderInsert = { name, color, user_id: userId, workspace_id: workspaceId ?? null }
     const { data, error } = await supabase
       .from('folders')
       .insert(payload)

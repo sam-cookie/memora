@@ -1,23 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foldersService } from '../services/folders.service'
 import { useAuth } from '@/hooks/useAuth'
+import { useWorkspace } from '@/providers/WorkspaceProvider'
 import type { FolderColor } from '@/types/database'
 
 export function useFolders() {
+  const { activeWorkspace, isLoading: workspaceLoading } = useWorkspace()
+  const { isAuthenticated } = useAuth()
+
   return useQuery({
-    queryKey: ['folders'],
-    queryFn: () => foldersService.getFolders(),
+    queryKey: ['folders', activeWorkspace?.id],
+    queryFn: () => foldersService.getFolders(activeWorkspace?.id),
+    enabled: isAuthenticated && !workspaceLoading,
   })
 }
 
 export function useCreateFolder() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
+  const { activeWorkspace } = useWorkspace()
 
   return useMutation({
     mutationFn: ({ name, color }: { name: string; color: FolderColor }) => {
       if (!user) throw new Error('Not authenticated')
-      return foldersService.createFolder(name, color, user.id)
+      return foldersService.createFolder(name, color, user.id, activeWorkspace?.id)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['folders'] })

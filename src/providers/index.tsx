@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom'
 import { QueryProvider } from './QueryProvider'
 import { AuthProvider } from './AuthProvider'
 import { ThemeProvider } from './ThemeProvider'
+import { WorkspaceProvider } from './WorkspaceProvider'
 import { Toaster } from '@/components/ui/toaster'
 import { router } from '@/router'
 
@@ -15,8 +16,10 @@ export function RootProvider(_props: RootProviderProps) {
     <ThemeProvider defaultTheme="dark">
       <QueryProvider>
         <AuthProvider>
-          <RouterProvider router={router} />
-          <Toaster />
+          <WorkspaceProvider>
+            <RouterProvider router={router} />
+            <Toaster />
+          </WorkspaceProvider>
         </AuthProvider>
       </QueryProvider>
     </ThemeProvider>

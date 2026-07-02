@@ -52,16 +52,18 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export const analyticsService = {
-  async getAnalytics(): Promise<AnalyticsData> {
+  async getAnalytics(workspaceId?: string | null): Promise<AnalyticsData> {
+    let meetingsQuery = supabase.from('meetings').select('created_at, status, participants')
+    if (workspaceId) meetingsQuery = meetingsQuery.eq('workspace_id', workspaceId)
+
     const [meetingsRes, actionItemsRes] = await Promise.all([
-      supabase.from('meetings').select('created_at, status, participants'),
+      meetingsQuery,
       supabase.from('action_items').select('created_at, completed'),
     ])
 
     const meetings = meetingsRes.data ?? []
     const actionItems = actionItemsRes.data ?? []
 
-    // All unique sorted month keys across both datasets
     const allKeys = [
       ...new Set([
         ...meetings.map((m) => toMonthKey(m.created_at)),
@@ -69,14 +71,12 @@ export const analyticsService = {
       ]),
     ].sort()
 
-    // Meetings per month
     const meetingMonths: Record<string, number> = {}
     meetings.forEach(({ created_at }) => {
       const k = toMonthKey(created_at)
       meetingMonths[k] = (meetingMonths[k] ?? 0) + 1
     })
 
-    // Action items per month (total + completed)
     const aiTotal: Record<string, number> = {}
     const aiDone: Record<string, number> = {}
     actionItems.forEach(({ created_at, completed }) => {
@@ -85,13 +85,11 @@ export const analyticsService = {
       if (completed) aiDone[k] = (aiDone[k] ?? 0) + 1
     })
 
-    // Status breakdown
     const statusMap: Record<string, number> = {}
     meetings.forEach(({ status }) => {
       statusMap[status] = (statusMap[status] ?? 0) + 1
     })
 
-    // Top participants (count across all meetings)
     const participantMap: Record<string, number> = {}
     meetings.forEach(({ participants }) => {
       if (!participants) return

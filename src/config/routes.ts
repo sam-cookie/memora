@@ -20,6 +20,10 @@ export const ROUTES = {
   settingsAccount: '/settings/account',
   settingsNotifications: '/settings/notifications',
 
+  workspaces: '/workspaces',
+  participants: '/participants',
+  participant: (id: string) => `/participants/${id}`,
+
   // Errors
   notFound: '/404',
   serverError: '/500',

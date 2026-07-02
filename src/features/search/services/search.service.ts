@@ -17,28 +17,31 @@ export interface SearchResults {
 }
 
 export const searchService = {
-  async search(query: string): Promise<SearchResults> {
+  async search(query: string, workspaceId?: string | null): Promise<SearchResults> {
     if (!query.trim()) return { meetings: [], actionItems: [] }
 
     const q = query.trim()
 
-    const [meetingsRes, actionItemsRes] = await Promise.all([
-      supabase
-        .from('meetings')
-        .select('*')
-        .or(`title.ilike.%${q}%,summary.ilike.%${q}%,transcript.ilike.%${q}%`)
-        .order('created_at', { ascending: false })
-        .limit(20),
+    let meetingsQuery = supabase
+      .from('meetings')
+      .select('*')
+      .or(`title.ilike.%${q}%,summary.ilike.%${q}%,transcript.ilike.%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(20)
 
+    if (workspaceId) meetingsQuery = meetingsQuery.eq('workspace_id', workspaceId)
+
+    const [meetingsRes, actionItemsRes] = await Promise.all([
+      meetingsQuery,
       supabase
         .from('action_items')
-        .select('id, content, priority, completed, meeting_id, meetings(id, title, status)')
+        .select('id, content, priority, completed, meeting_id, meetings(id, title, status, workspace_id)')
         .ilike('content', `%${q}%`)
         .limit(20),
     ])
 
-    const actionItems: ActionItemResult[] = (actionItemsRes.data ?? []).map((row) => {
-      const meeting = (row.meetings ?? {}) as { id?: string; title?: string; status?: string }
+    let actionItems: ActionItemResult[] = (actionItemsRes.data ?? []).map((row) => {
+      const meeting = (row.meetings ?? {}) as { id?: string; title?: string; status?: string; workspace_id?: string }
       return {
         id: row.id as string,
         content: row.content as string,
@@ -49,6 +52,14 @@ export const searchService = {
         meetingStatus: meeting.status ?? 'unknown',
       }
     })
+
+    if (workspaceId) {
+      actionItems = actionItems.filter((item) => {
+        const raw = (actionItemsRes.data ?? []).find((r) => r.id === item.id)
+        const meeting = raw?.meetings as { workspace_id?: string } | null
+        return meeting?.workspace_id === workspaceId
+      })
+    }
 
     return {
       meetings: meetingsRes.data ?? [],

@@ -2,6 +2,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { meetingsService } from '../services/meetings.service'
 import type { MeetingUpdate } from '@/types/database'
 
+export function useMeetingContacts(meetingId: string) {
+  return useQuery({
+    queryKey: ['meeting', meetingId, 'contacts'],
+    queryFn: () => meetingsService.getMeetingContacts(meetingId),
+    enabled: !!meetingId,
+  })
+}
+
+export function useSetMeetingContacts(meetingId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (contactIds: string[]) => meetingsService.setMeetingContacts(meetingId, contactIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['meeting', meetingId, 'contacts'] })
+    },
+  })
+}
+
 const PROCESSING_STATUSES = new Set(['pending', 'uploading', 'transcribing', 'analyzing'])
 
 export function useMeeting(id: string) {

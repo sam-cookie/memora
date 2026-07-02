@@ -96,10 +96,10 @@ function ChartSkeleton() {
 
 export function AnalyticsPage() {
   const { data, isLoading } = useAnalytics()
+  const loading = isLoading || !data
 
   const noData =
-    !isLoading &&
-    data &&
+    !loading &&
     data.meetingsByMonth.length === 0 &&
     data.topParticipants.length === 0
 
@@ -120,10 +120,10 @@ export function AnalyticsPage() {
           />
         )}
 
-        {(isLoading || !noData) && (
+        {(loading || !noData) && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Meetings per month */}
-            {isLoading ? (
+            {loading ? (
               <ChartSkeleton />
             ) : (
               <ChartCard title="Meetings per month" subtitle="All uploaded meetings over time">
@@ -159,7 +159,7 @@ export function AnalyticsPage() {
             )}
 
             {/* Tasks completed */}
-            {isLoading ? (
+            {loading ? (
               <ChartSkeleton />
             ) : (
               <ChartCard title="Tasks completed" subtitle="Total vs completed action items by month">
@@ -181,7 +181,7 @@ export function AnalyticsPage() {
             )}
 
             {/* Meeting status breakdown */}
-            {isLoading ? (
+            {loading ? (
               <ChartSkeleton />
             ) : (
               <ChartCard title="Meeting status" subtitle="Distribution across all meetings">
@@ -231,7 +231,7 @@ export function AnalyticsPage() {
             )}
 
             {/* Top participants */}
-            {isLoading ? (
+            {loading ? (
               <ChartSkeleton />
             ) : (
               <ChartCard title="Most active participants" subtitle="Frequency across meetings">

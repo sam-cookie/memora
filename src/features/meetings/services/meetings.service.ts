@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Database } from '@/types/database'
+import type { Database, MeetingContactWithContact } from '@/types/database'
 
 type MeetingInsert = Database['public']['Tables']['meetings']['Insert']
 type MeetingUpdate = Database['public']['Tables']['meetings']['Update']
@@ -116,12 +116,19 @@ export const meetingsService = {
     return data ?? []
   },
 
-  async getMeetings() {
-    const { data, error } = await supabase
+  async getMeetings(workspaceId?: string | null) {
+    let query = supabase
       .from('meetings')
       .select('*')
       .order('created_at', { ascending: false })
 
+    if (workspaceId) {
+      // Include both meetings in this workspace AND orphaned ones (workspace_id IS NULL)
+      // so meetings created before workspace association aren't lost
+      query = query.or(`workspace_id.eq.${workspaceId},workspace_id.is.null`)
+    }
+
+    const { data, error } = await query
     if (error) throw new Error(error.message)
     return data ?? []
   },
@@ -129,5 +136,33 @@ export const meetingsService = {
   async deleteMeeting(id: string) {
     const { error } = await supabase.from('meetings').delete().eq('id', id)
     if (error) throw new Error(error.message)
+  },
+
+  async getMeetingContacts(meetingId: string): Promise<MeetingContactWithContact[]> {
+    const { data, error } = await supabase
+      .from('meeting_contacts')
+      .select('*, contact:contacts(*)')
+      .eq('meeting_id', meetingId)
+      .order('created_at')
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as MeetingContactWithContact[]
+  },
+
+  async setMeetingContacts(meetingId: string, contactIds: string[]): Promise<void> {
+    const { error: deleteError } = await supabase
+      .from('meeting_contacts')
+      .delete()
+      .eq('meeting_id', meetingId)
+
+    if (deleteError) throw new Error(deleteError.message)
+
+    if (contactIds.length === 0) return
+
+    const { error: insertError } = await supabase.from('meeting_contacts').insert(
+      contactIds.map((contact_id) => ({ meeting_id: meetingId, contact_id })),
+    )
+
+    if (insertError) throw new Error(insertError.message)
   },
 }
