@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { cn } from '@/lib/utils'
+import { ChatWidget } from '@/features/chat/components/ChatWidget'
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,6 +65,8 @@ export function AppLayout() {
           </motion.div>
         </main>
       </div>
+
+      <ChatWidget />
     </div>
   )
 }

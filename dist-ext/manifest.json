@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Memora",
+  "version": "0.1.0",
+  "description": "Record and transcribe meetings instantly",
+  "icons": {
+    "16": "memora.png",
+    "48": "memora.png",
+    "128": "memora.png"
+  },
+  "action": {
+    "default_title": "Memora – Record meeting"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": ["https://api.openai.com/*"]
+}
