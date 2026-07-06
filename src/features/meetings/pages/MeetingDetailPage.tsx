@@ -23,12 +23,7 @@ import {
   MessageSquare,
   Sparkles,
   Clock,
-  UserX,
-  RefreshCw,
   BarChart2,
-  CircleEllipsis,
-  ArrowRight,
-  ShieldAlert,
   TrendingUp,
   ChevronDown,
   ChevronRight,
@@ -52,6 +47,7 @@ import {
   useMeetingContacts,
 } from '../hooks/useMeetingDetail'
 import { useExportPDF } from '../hooks/useExportPDF'
+import { useExportDocx } from '../hooks/useExportDocx'
 import { EditMeetingDialog } from '../components/EditMeetingDialog'
 import { DeleteMeetingDialog } from '../components/DeleteMeetingDialog'
 import { ReviewParticipantsPanel } from '../components/ReviewParticipantsPanel'
@@ -191,59 +187,45 @@ function downloadMarkdown(filename: string, content: string) {
 
 // ─── Badge components ─────────────────────────────────────────────────────────
 
-const OVERALL_STATUS_CONFIG: Record<MeetingOverallStatus, { label: string; className: string }> = {
-  'on-track': {
-    label: 'On Track',
-    className: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800',
-  },
-  'at-risk': {
-    label: 'At Risk',
-    className: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800',
-  },
-  blocked: {
-    label: 'Blocked',
-    className: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800',
-  },
+const OVERALL_STATUS_CONFIG: Record<MeetingOverallStatus, { label: string; color: string }> = {
+  'on-track': { label: 'On Track', color: 'text-emerald-600 dark:text-emerald-400' },
+  'at-risk': { label: 'At Risk', color: 'text-amber-600 dark:text-amber-400' },
+  blocked: { label: 'Blocked', color: 'text-red-600 dark:text-red-400' },
 }
 
 function OverallStatusBadge({ status }: { status: MeetingOverallStatus }) {
   const cfg = OVERALL_STATUS_CONFIG[status]
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.className}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {cfg.label}
-    </span>
+    <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
   )
 }
 
-const PRIORITY_CONFIG: Record<ActionItemPriority, { className: string }> = {
-  critical: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
-  high: { className: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400' },
-  medium: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
-  low: { className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
+const PRIORITY_TEXT: Record<ActionItemPriority, string> = {
+  critical: 'text-red-500 dark:text-red-400',
+  high: 'text-orange-500 dark:text-orange-400',
+  medium: 'text-muted-foreground',
+  low: 'text-muted-foreground/60',
 }
 
 function PriorityBadge({ priority }: { priority: ActionItemPriority }) {
-  const cfg = PRIORITY_CONFIG[priority]
   return (
-    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${cfg.className}`}>
-      {capitalize(priority)}
+    <span className={`text-[10px] font-semibold uppercase tracking-widest ${PRIORITY_TEXT[priority]}`}>
+      {priority}
     </span>
   )
 }
 
-const SEVERITY_CONFIG: Record<RiskSeverity, { className: string }> = {
-  critical: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
-  high: { className: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400' },
-  medium: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
-  low: { className: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
+const SEVERITY_TEXT: Record<RiskSeverity, string> = {
+  critical: 'text-red-500 dark:text-red-400',
+  high: 'text-orange-500 dark:text-orange-400',
+  medium: 'text-amber-600 dark:text-amber-400',
+  low: 'text-muted-foreground',
 }
 
 function SeverityBadge({ severity }: { severity: RiskSeverity }) {
-  const cfg = SEVERITY_CONFIG[severity]
   return (
-    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${cfg.className}`}>
-      {capitalize(severity)}
+    <span className={`text-[10px] font-semibold uppercase tracking-widest shrink-0 ${SEVERITY_TEXT[severity]}`}>
+      {severity}
     </span>
   )
 }
@@ -251,24 +233,20 @@ function SeverityBadge({ severity }: { severity: RiskSeverity }) {
 function ConfidenceIndicator({ confidence }: { confidence: Confidence }) {
   if (confidence === 'high') return null
   return (
-    <span className={`text-[11px] font-medium ${
-      confidence === 'medium'
-        ? 'text-amber-600 dark:text-amber-400'
-        : 'text-orange-600 dark:text-orange-400'
-    }`}>
-      {confidence === 'medium' ? '~ Inferred' : '~ Estimated'}
+    <span className="text-[10px] text-muted-foreground/60 font-medium">
+      {confidence === 'medium' ? 'inferred' : 'estimated'}
     </span>
   )
 }
 
-const INSIGHT_CONFIG: Record<InsightType, { icon: LucideIcon; className: string; label: string }> = {
-  'missing-owner': { icon: UserX, className: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-300', label: 'Missing Owner' },
-  'missing-deadline': { icon: Clock, className: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-300', label: 'Missing Deadline' },
-  'repeated-concern': { icon: RefreshCw, className: 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/20 dark:border-orange-800 dark:text-orange-300', label: 'Repeated Concern' },
-  'project-risk': { icon: ShieldAlert, className: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300', label: 'Project Risk' },
-  'unresolved-item': { icon: CircleEllipsis, className: 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300', label: 'Unresolved Item' },
-  'follow-up-needed': { icon: ArrowRight, className: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300', label: 'Follow-up Needed' },
-  'discussion-distribution': { icon: BarChart2, className: 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950/20 dark:border-purple-800 dark:text-purple-300', label: 'Distribution' },
+const INSIGHT_CONFIG: Record<InsightType, { label: string }> = {
+  'missing-owner': { label: 'Missing Owner' },
+  'missing-deadline': { label: 'Missing Deadline' },
+  'repeated-concern': { label: 'Repeated Concern' },
+  'project-risk': { label: 'Project Risk' },
+  'unresolved-item': { label: 'Unresolved Item' },
+  'follow-up-needed': { label: 'Follow-up Needed' },
+  'discussion-distribution': { label: 'Discussion Distribution' },
 }
 
 // ─── Section Card ─────────────────────────────────────────────────────────────
@@ -278,7 +256,7 @@ function SectionCard({
   title,
   count,
   children,
-  accent,
+  accent: _accent,
   collapsible = false,
   defaultOpen = true,
 }: {
@@ -293,31 +271,29 @@ function SectionCard({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <section
-      className={`rounded-xl border bg-card shadow-sm overflow-hidden ${accent ? `border-l-4 ${accent}` : 'border-border'}`}
-    >
+    <section>
       <div
-        className={`flex items-center gap-2.5 px-6 py-4 bg-muted/20 ${open ? 'border-b border-border/60' : ''} ${collapsible ? 'cursor-pointer select-none' : ''}`}
+        className={`flex items-center justify-between pb-3 border-b border-border/50 mb-5 ${collapsible ? 'cursor-pointer select-none' : ''}`}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
         role={collapsible ? 'button' : undefined}
         aria-expanded={collapsible ? open : undefined}
         tabIndex={collapsible ? 0 : undefined}
         onKeyDown={collapsible ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v) } } : undefined}
       >
-        <Icon className="h-4 w-4 text-primary shrink-0" />
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {count !== undefined && (
-          <span className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold text-primary ${collapsible ? '' : 'ml-auto'}`}>
-            {count}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{title}</h2>
+          {count !== undefined && (
+            <span className="text-xs text-muted-foreground/60 tabular-nums">({count})</span>
+          )}
+        </div>
         {collapsible && (
           <ChevronDown
-            className={`ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
+            className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-150 ${open ? '' : '-rotate-90'}`}
           />
         )}
       </div>
-      {open && <div className="px-6 py-5">{children}</div>}
+      {open && <div>{children}</div>}
     </section>
   )
 }
@@ -326,27 +302,26 @@ function SectionCard({
 
 function ExecutiveSummaryCard({ summary }: { summary: MeetingAnalysis['executiveSummary'] }) {
   return (
-    <section className="rounded-xl border border-primary/20 bg-primary/5 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-primary/10">
-        <div className="flex items-center gap-2.5">
-          <Target className="h-4 w-4 text-primary shrink-0" />
-          <h2 className="text-sm font-semibold text-foreground">Executive Summary</h2>
+    <section>
+      <div className="flex items-center justify-between pb-3 border-b border-border/50 mb-5">
+        <div className="flex items-center gap-2">
+          <Target className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Executive Summary</h2>
         </div>
         <OverallStatusBadge status={summary.status} />
       </div>
-      <div className="px-6 py-5 space-y-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Objective</p>
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Objective</p>
             <p className="text-sm text-foreground leading-relaxed">{summary.objective}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Key Outcome</p>
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Key Outcome</p>
             <p className="text-sm text-foreground leading-relaxed">{summary.keyOutcome}</p>
           </div>
         </div>
-        <Separator className="opacity-40" />
-        <p className="text-sm text-foreground/90 leading-relaxed">{summary.paragraph}</p>
+        <p className="text-sm text-foreground/75 leading-relaxed border-t border-border/40 pt-4">{summary.paragraph}</p>
       </div>
     </section>
   )
@@ -357,25 +332,19 @@ function ExecutiveSummaryCard({ summary }: { summary: MeetingAnalysis['executive
 function DiscussionTopicsSection({ topics }: { topics: MeetingAnalysis['discussionTopics'] }) {
   return (
     <SectionCard icon={MessageSquare} title="Discussion Topics" count={topics.length}>
-      <div className="space-y-5">
+      <div className="divide-y divide-border/40">
         {topics.map((topic, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="space-y-2"
-          >
-            <h3 className="text-sm font-semibold text-foreground">{topic.topic}</h3>
-            <ul className="space-y-1.5">
+          <div key={i} className={`space-y-2 ${i === 0 ? 'pb-4' : 'py-4'} last:pb-0`}>
+            <h3 className="text-sm font-medium text-foreground">{topic.topic}</h3>
+            <ul className="space-y-1.5 pl-1">
               {topic.points.map((point, j) => (
-                <li key={j} className="flex items-start gap-2.5 text-sm text-foreground/85">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
+                <li key={j} className="flex items-start gap-2.5 text-sm text-foreground/70 leading-relaxed">
+                  <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
                   {point}
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
         ))}
       </div>
     </SectionCard>
@@ -399,72 +368,62 @@ function PremiumActionItemsSection({
   return (
     <SectionCard icon={CheckSquare} title="Action Items" count={aiItems.length} collapsible>
       {aiItems.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">No action items extracted.</p>
+        <p className="text-sm text-muted-foreground">No action items extracted.</p>
       ) : (
-        <div className="space-y-3">
+        <div>
           {pending > 0 && done > 0 && (
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-1.5 flex-1 rounded-full bg-border overflow-hidden">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-px flex-1 bg-border overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full transition-all"
+                  className="h-full bg-foreground/30 transition-all"
                   style={{ width: `${Math.round((done / aiItems.length) * 100)}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground shrink-0">{done}/{aiItems.length} done</span>
+              <span className="text-[10px] font-medium text-muted-foreground/60 shrink-0 tabular-nums uppercase tracking-widest">{done}/{aiItems.length} done</span>
             </div>
           )}
-          {aiItems.map((item, i) => {
-            const dbItem = dbItems[i]
-            const completed = dbItem?.completed ?? false
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className={`flex items-start gap-3 rounded-lg border p-3.5 transition-colors ${
-                  completed
-                    ? 'bg-muted/30 border-border/40'
-                    : 'bg-card border-border hover:border-border/80'
-                }`}
-              >
-                <button
-                  aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
-                  onClick={() => dbItem && onToggle(dbItem.id, !completed)}
-                  disabled={!dbItem}
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${
-                    completed
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/60'
-                  }`}
+          <div className="divide-y divide-border/40">
+            {aiItems.map((item, i) => {
+              const dbItem = dbItems[i]
+              const completed = dbItem?.completed ?? false
+              return (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 py-3 first:pt-0 last:pb-0`}
                 >
-                  {completed && <Check className="h-3 w-3" />}
-                </button>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <p
-                    className={`text-sm leading-snug ${
-                      completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                  <button
+                    aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
+                    onClick={() => dbItem && onToggle(dbItem.id, !completed)}
+                    disabled={!dbItem}
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30 ${
+                      completed
+                        ? 'border-foreground/30 bg-foreground/20 text-foreground'
+                        : 'border-border hover:border-foreground/40'
                     }`}
                   >
-                    {item.content}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PriorityBadge priority={item.priority} />
-                    {item.assignee && (
-                      <span className="text-xs text-muted-foreground">→ {item.assignee}</span>
-                    )}
-                    {item.dueDate && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatShortDate(item.dueDate)}
-                      </span>
-                    )}
-                    <ConfidenceIndicator confidence={item.confidence} />
+                    {completed && <Check className="h-2.5 w-2.5" />}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm leading-snug ${completed ? 'line-through text-muted-foreground/50' : 'text-foreground'}`}>
+                      {item.content}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 mt-1">
+                      <PriorityBadge priority={item.priority} />
+                      {item.assignee && (
+                        <span className="text-xs text-muted-foreground">{item.assignee}</span>
+                      )}
+                      {item.dueDate && (
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {formatShortDate(item.dueDate)}
+                        </span>
+                      )}
+                      <ConfidenceIndicator confidence={item.confidence} />
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
     </SectionCard>
@@ -475,32 +434,23 @@ function PremiumActionItemsSection({
 
 function PremiumDecisionsSection({ decisions }: { decisions: DecisionAI[] }) {
   return (
-    <SectionCard icon={Lightbulb} title="Decisions" count={decisions.length} accent="border-l-emerald-400">
-      <div className="space-y-4">
+    <SectionCard icon={Lightbulb} title="Decisions" count={decisions.length}>
+      <div className="divide-y divide-border/40">
         {decisions.map((d, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-4"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground leading-snug">{d.content}</p>
+          <div key={i} className={`space-y-2.5 ${i === 0 ? 'pb-4' : 'py-4'} last:pb-0`}>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm text-foreground leading-snug">{d.content}</p>
               <ConfidenceIndicator confidence={d.confidence} />
             </div>
             {d.context && (
-              <p className="text-xs text-muted-foreground leading-relaxed pl-3 border-l-2 border-border">
+              <p className="text-sm text-muted-foreground leading-relaxed pl-3 border-l border-border/60">
                 {d.context}
               </p>
             )}
             {d.impact && (
-              <div className="flex items-start gap-2 pt-1">
-                <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary/60" />
-                <p className="text-xs text-primary/80 leading-relaxed">{d.impact}</p>
-              </div>
+              <p className="text-xs text-muted-foreground/70 leading-relaxed">{d.impact}</p>
             )}
-          </motion.div>
+          </div>
         ))}
       </div>
     </SectionCard>
@@ -508,13 +458,6 @@ function PremiumDecisionsSection({ decisions }: { decisions: DecisionAI[] }) {
 }
 
 // ─── Risks & Blockers (premium) ───────────────────────────────────────────────
-
-const RISK_SEVERITY_BORDER: Record<RiskSeverity, string> = {
-  critical: 'border-l-red-500',
-  high: 'border-l-orange-500',
-  medium: 'border-l-amber-400',
-  low: 'border-l-blue-400',
-}
 
 const LIKELIHOOD_LABEL: Record<string, string> = {
   low: 'Low',
@@ -524,39 +467,30 @@ const LIKELIHOOD_LABEL: Record<string, string> = {
 
 function PremiumRisksSection({ risks }: { risks: RiskAI[] }) {
   return (
-    <SectionCard icon={AlertTriangle} title="Risks & Blockers" count={risks.length} accent="border-l-orange-400">
-      <div className="space-y-4">
+    <SectionCard icon={AlertTriangle} title="Risks & Blockers" count={risks.length}>
+      <div className="divide-y divide-border/40">
         {risks.map((r, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className={`rounded-lg border border-l-4 bg-card p-4 space-y-3 ${RISK_SEVERITY_BORDER[r.severity]}`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground leading-snug">{r.content}</p>
+          <div key={i} className={`space-y-3 ${i === 0 ? 'pb-4' : 'py-4'} last:pb-0`}>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm text-foreground leading-snug">{r.content}</p>
               <SeverityBadge severity={r.severity} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {r.impact && (
-                <div className="space-y-0.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Impact</p>
-                  <p className="text-xs text-foreground/80 leading-relaxed">{r.impact}</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Impact</p>
+                  <p className="text-xs text-foreground/70 leading-relaxed">{r.impact}</p>
                 </div>
               )}
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Likelihood</p>
-                <p className="text-xs text-foreground/80">{LIKELIHOOD_LABEL[r.likelihood]}</p>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Likelihood</p>
+                <p className="text-xs text-foreground/70">{LIKELIHOOD_LABEL[r.likelihood]}</p>
               </div>
             </div>
             {r.mitigation && (
-              <div className="rounded-md bg-muted/40 px-3 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Mitigation</p>
-                <p className="text-xs text-foreground/80 leading-relaxed">{r.mitigation}</p>
-              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed pl-3 border-l border-border/60">{r.mitigation}</p>
             )}
-          </motion.div>
+          </div>
         ))}
       </div>
     </SectionCard>
@@ -568,20 +502,12 @@ function PremiumRisksSection({ risks }: { risks: RiskAI[] }) {
 function OpenQuestionsSection({ questions }: { questions: string[] }) {
   return (
     <SectionCard icon={HelpCircle} title="Open Questions" count={questions.length}>
-      <ol className="space-y-2.5">
+      <ol className="space-y-3">
         {questions.map((q, i) => (
-          <motion.li
-            key={i}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className="flex items-start gap-3 text-sm text-foreground"
-          >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-              {i + 1}
-            </span>
+          <li key={i} className="flex items-start gap-3 text-sm text-foreground leading-relaxed">
+            <span className="shrink-0 text-xs tabular-nums text-muted-foreground/50 mt-px w-4 text-right">{i + 1}.</span>
             {q}
-          </motion.li>
+          </li>
         ))}
       </ol>
     </SectionCard>
@@ -592,22 +518,15 @@ function OpenQuestionsSection({ questions }: { questions: string[] }) {
 
 function AIInsightsSection({ insights }: { insights: MeetingAnalysis['aiInsights'] }) {
   return (
-    <SectionCard icon={Sparkles} title="AI Insights" count={insights.length} accent="border-l-violet-400">
-      <div className="space-y-2.5">
+    <SectionCard icon={Sparkles} title="AI Insights" count={insights.length}>
+      <div className="divide-y divide-border/40">
         {insights.map((insight, i) => {
           const cfg = INSIGHT_CONFIG[insight.type]
-          const Icon = cfg.icon
           return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${cfg.className}`}
-            >
-              <Icon className="h-4 w-4 shrink-0 mt-0.5" />
-              <p className="text-sm leading-relaxed">{insight.content}</p>
-            </motion.div>
+            <div key={i} className={`${i === 0 ? 'pb-4' : 'py-4'} last:pb-0`}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">{cfg.label}</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{insight.content}</p>
+            </div>
           )
         })}
       </div>
@@ -620,22 +539,18 @@ function AIInsightsSection({ insights }: { insights: MeetingAnalysis['aiInsights
 function TimelineSection({ timeline }: { timeline: MeetingAnalysis['timeline'] }) {
   return (
     <SectionCard icon={TrendingUp} title="Meeting Timeline" count={timeline.length}>
-      <div className="relative pl-6 space-y-0">
-        <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
+      <div className="space-y-0">
         {timeline.map((event, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className="relative pb-5 last:pb-0"
-          >
-            <span className="absolute -left-4 top-1 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary/70 ring-2 ring-primary/20" />
-            <div className="space-y-0.5">
-              <p className="text-xs font-semibold text-primary">{event.moment}</p>
-              <p className="text-sm text-foreground/85 leading-relaxed">{event.description}</p>
+          <div key={i} className="flex gap-4">
+            <div className="flex flex-col items-center pt-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-border shrink-0" />
+              {i < timeline.length - 1 && <div className="w-px flex-1 bg-border/40 mt-1.5 mb-1.5" />}
             </div>
-          </motion.div>
+            <div className={`${i < timeline.length - 1 ? 'pb-4' : ''}`}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">{event.moment}</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{event.description}</p>
+            </div>
+          </div>
         ))}
       </div>
     </SectionCard>
@@ -652,15 +567,15 @@ function ProgressSummary({ actionItems, dbItems }: { actionItems: ActionItemAI[]
 
   return (
     <SectionCard icon={BarChart2} title="Progress Summary">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 divide-x divide-border/50">
         {[
-          { label: 'Completed', value: completed, color: 'text-emerald-600' },
-          { label: 'In Progress', value: inProgress, color: 'text-amber-600' },
-          { label: 'Pending', value: pending, color: 'text-muted-foreground' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-lg border border-border/60 bg-muted/20 p-4 text-center">
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{label}</p>
+          { label: 'Completed', value: completed },
+          { label: 'In Progress', value: inProgress },
+          { label: 'Pending', value: pending },
+        ].map(({ label, value }) => (
+          <div key={label} className="text-center px-4 first:pl-0 last:pr-0">
+            <p className="text-2xl font-light tabular-nums text-foreground">{value}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mt-1">{label}</p>
           </div>
         ))}
       </div>
@@ -676,15 +591,15 @@ function TranscriptSection({ transcript }: { transcript: string }) {
     <SectionCard icon={AlignLeft} title="Transcript">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         aria-expanded={open}
       >
-        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        {open ? 'Hide transcript' : 'Show transcript'}
+        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {open ? 'Hide' : 'Show transcript'}
       </button>
       {open && (
-        <div className="mt-4 rounded-lg border border-border bg-muted/30 p-5 overflow-x-auto">
-          <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/70">
+        <div className="mt-4 overflow-x-auto">
+          <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-foreground/60">
             {transcript}
           </pre>
         </div>
@@ -974,6 +889,7 @@ export function MeetingDetailPage() {
   const toggle = useToggleActionItem(meetingId)
   const update = useUpdateMeeting(meetingId)
   const { exportPDF, isExporting } = useExportPDF()
+  const { exportDocx, isExporting: isExportingDocx } = useExportDocx()
 
   function handleDismissReview() {
     localStorage.setItem(`participants-reviewed-${meetingId}`, '1')
@@ -1037,6 +953,17 @@ export function MeetingDetailPage() {
               <Button variant="outline" size="sm" onClick={handleExportMarkdown}>
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />
                 Export Markdown
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExportingDocx}
+                onClick={() => void exportDocx({ meeting, actionItems, decisions, risks, questions })}
+              >
+                {isExportingDocx
+                  ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  : <FileText className="h-3.5 w-3.5 mr-1.5" />}
+                {isExportingDocx ? 'Exporting…' : 'Export DOCX'}
               </Button>
               <Button
                 variant="outline"
@@ -1145,7 +1072,7 @@ export function MeetingDetailPage() {
 
           {/* Premium layout (when ai_analysis exists) */}
           {aiAnalysis ? (
-            <div className="space-y-6">
+            <div className="space-y-10">
               {/* Participant review panel — shown until dismissed or all linked */}
               {!reviewDismissed && meeting.participants && meeting.participants.length > 0 && (
                 <ReviewParticipantsPanel

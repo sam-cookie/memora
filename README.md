@@ -174,7 +174,7 @@ src/
 │   └── settings/        # User and workspace settings
 ├── hooks/               # Shared React hooks
 ├── providers/           # React context providers (Auth, Query, Theme, Workspace)
-├── router/              # Route definitions
+├── router/              # Route definitionsch
 ├── lib/                 # Utility functions and Supabase client
 ├── types/               # Shared TypeScript types
 └── assets/              # Static assets
