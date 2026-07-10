@@ -102,7 +102,9 @@ function formatDuration(seconds: number | null) {
 
 function getAiAnalysis(meeting: Meeting): MeetingAnalysis | null {
   if (!meeting.ai_analysis) return null
-  return meeting.ai_analysis as unknown as MeetingAnalysis
+  const analysis = meeting.ai_analysis as unknown as MeetingAnalysis
+  if (!analysis.executiveSummary) return null
+  return analysis
 }
 
 // ─── Export helpers ────────────────────────────────────────────────────────────

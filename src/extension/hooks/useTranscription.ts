@@ -24,7 +24,7 @@ export function useTranscription(apiKey: string): UseTranscriptionReturn {
   const transcribe = useCallback(
     async (blob: Blob) => {
       if (!apiKey) {
-        setError('OpenAI API key is required')
+        setError('Groq API key is required')
         return
       }
 
@@ -34,10 +34,10 @@ export function useTranscription(apiKey: string): UseTranscriptionReturn {
       try {
         const body = new FormData()
         body.append('file', blob, 'recording.webm')
-        body.append('model', 'whisper-1')
+        body.append('model', 'whisper-large-v3-turbo')
 
         const response = await fetch(
-          'https://api.openai.com/v1/audio/transcriptions',
+          'https://api.groq.com/openai/v1/audio/transcriptions',
           {
             method: 'POST',
             headers: { Authorization: `Bearer ${apiKey}` },
@@ -55,6 +55,11 @@ export function useTranscription(apiKey: string): UseTranscriptionReturn {
         }
 
         const data: WhisperResponse = await response.json()
+        if (!data.text.trim()) {
+          throw new Error(
+            'No speech detected. Make sure the meeting audio was playing and not muted.',
+          )
+        }
         setTranscript(data.text)
       } catch (err) {
         setError(

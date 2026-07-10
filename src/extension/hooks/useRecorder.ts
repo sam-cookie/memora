@@ -7,7 +7,9 @@ export interface UseRecorderReturn {
   duration: number
   audioBlob: Blob | null
   error: string | null
-  start: () => Promise<void>
+  permissionDenied: boolean
+  startMic: () => Promise<void>
+  startTab: () => Promise<void>
   stop: () => void
   reset: () => void
 }
@@ -17,6 +19,7 @@ export function useRecorder(): UseRecorderReturn {
   const [duration, setDuration] = useState(0)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -30,49 +33,107 @@ export function useRecorder(): UseRecorderReturn {
     }
   }, [])
 
-  const start = useCallback(async () => {
+  const startRecording = useCallback((stream: MediaStream) => {
+    streamRef.current = stream
+
+    const mimeType =
+      ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find((t) =>
+        MediaRecorder.isTypeSupported(t),
+      ) ?? ''
+
+    const recorder = new MediaRecorder(
+      stream,
+      mimeType ? { mimeType } : undefined,
+    )
+    chunksRef.current = []
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data)
+    }
+
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, {
+        type: recorder.mimeType || 'audio/webm',
+      })
+      setAudioBlob(blob)
+      stream.getTracks().forEach((t) => t.stop())
+    }
+
+    recorderRef.current = recorder
+    recorder.start(1000)
+    setState('recording')
+    setDuration(0)
+    timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000)
+  }, [])
+
+  const startMic = useCallback(async () => {
     setError(null)
+    setPermissionDenied(false)
+
+    try {
+      const status = await navigator.permissions.query({
+        name: 'microphone' as PermissionName,
+      })
+      if (status.state === 'denied') {
+        setPermissionDenied(true)
+        return
+      }
+    } catch {
+      // permissions API unavailable — fall through to getUserMedia
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
+      startRecording(stream)
+    } catch (err) {
+      if (err instanceof DOMException) {
+        if (err.name === 'NotAllowedError') {
+          setPermissionDenied(true)
+        } else if (err.name === 'NotFoundError') {
+          setError('No microphone found. Plug in a microphone and try again.')
+        } else {
+          setError(`Microphone error: ${err.message}`)
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Microphone error')
+      }
+    }
+  }, [startRecording])
 
-      const mimeType =
-        ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find((t) =>
-          MediaRecorder.isTypeSupported(t),
-        ) ?? ''
+  const startTab = useCallback(async () => {
+    setError(null)
+    setPermissionDenied(false)
 
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined,
-      )
-      chunksRef.current = []
+    try {
+      const response = (await chrome.runtime.sendMessage({
+        type: 'GET_TAB_STREAM_ID',
+      })) as { streamId?: string; error?: string }
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
+      if (response.error || !response.streamId) {
+        setError(response.error ?? 'Could not start meeting capture.')
+        return
       }
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || 'audio/webm',
-        })
-        setAudioBlob(blob)
-        stream.getTracks().forEach((t) => t.stop())
-      }
+      // chromeMediaSource is Chrome-specific and not in the standard TS types
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          mandatory: {
+            chromeMediaSource: 'tab',
+            chromeMediaSourceId: response.streamId,
+          },
+        } as unknown as MediaTrackConstraints,
+        video: false,
+      })
 
-      recorderRef.current = recorder
-      recorder.start(1000)
-      setState('recording')
-      setDuration(0)
-      timerRef.current = setInterval(
-        () => setDuration((d) => d + 1),
-        1000,
-      )
+      startRecording(stream)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Microphone access denied',
+        err instanceof Error
+          ? err.message
+          : 'Failed to capture meeting audio.',
       )
     }
-  }, [])
+  }, [startRecording])
 
   const stop = useCallback(() => {
     if (recorderRef.current?.state !== 'inactive') {
@@ -90,9 +151,20 @@ export function useRecorder(): UseRecorderReturn {
     setDuration(0)
     setAudioBlob(null)
     setError(null)
+    setPermissionDenied(false)
     chunksRef.current = []
     recorderRef.current = null
   }, [])
 
-  return { state, duration, audioBlob, error, start, stop, reset }
+  return {
+    state,
+    duration,
+    audioBlob,
+    error,
+    permissionDenied,
+    startMic,
+    startTab,
+    stop,
+    reset,
+  }
 }

@@ -18,6 +18,6 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["sidePanel", "storage"],
-  "host_permissions": ["https://api.openai.com/*"]
+  "permissions": ["sidePanel", "storage", "tabs", "tabCapture"],
+  "host_permissions": ["https://api.groq.com/*", "https://*.supabase.co/*"]
 }

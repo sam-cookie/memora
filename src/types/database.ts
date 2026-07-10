@@ -22,6 +22,10 @@ export interface Database {
           meeting_id?: string
           contact_id?: string
         }
+        Relationships: [
+          { foreignKeyName: 'meeting_contacts_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+          { foreignKeyName: 'meeting_contacts_contact_id_fkey'; columns: ['contact_id']; referencedRelation: 'contacts'; referencedColumns: ['id'] },
+        ]
       }
       contacts: {
         Row: {
@@ -57,6 +61,9 @@ export interface Database {
           notes?: string | null
           archived?: boolean
         }
+        Relationships: [
+          { foreignKeyName: 'contacts_workspace_id_fkey'; columns: ['workspace_id']; referencedRelation: 'workspaces'; referencedColumns: ['id'] },
+        ]
       }
       workspace_members: {
         Row: {
@@ -83,6 +90,9 @@ export interface Database {
           role?: WorkspaceRole
           invited_by?: string | null
         }
+        Relationships: [
+          { foreignKeyName: 'workspace_members_workspace_id_fkey'; columns: ['workspace_id']; referencedRelation: 'workspaces'; referencedColumns: ['id'] },
+        ]
       }
       workspaces: {
         Row: {
@@ -115,6 +125,7 @@ export interface Database {
           color?: WorkspaceColor
           owner_id?: string
         }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -144,6 +155,7 @@ export interface Database {
           avatar_url?: string | null
           timezone?: string
         }
+        Relationships: []
       }
       folders: {
         Row: {
@@ -173,6 +185,9 @@ export interface Database {
           name?: string
           color?: FolderColor
         }
+        Relationships: [
+          { foreignKeyName: 'folders_workspace_id_fkey'; columns: ['workspace_id']; referencedRelation: 'workspaces'; referencedColumns: ['id'] },
+        ]
       }
       meetings: {
         Row: {
@@ -244,6 +259,10 @@ export interface Database {
           processed_at?: string | null
           ai_analysis?: Json | null
         }
+        Relationships: [
+          { foreignKeyName: 'meetings_workspace_id_fkey'; columns: ['workspace_id']; referencedRelation: 'workspaces'; referencedColumns: ['id'] },
+          { foreignKeyName: 'meetings_folder_id_fkey'; columns: ['folder_id']; referencedRelation: 'folders'; referencedColumns: ['id'] },
+        ]
       }
       action_items: {
         Row: {
@@ -282,6 +301,9 @@ export interface Database {
           completed?: boolean
           priority?: ActionItemPriority
         }
+        Relationships: [
+          { foreignKeyName: 'action_items_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+        ]
       }
       key_decisions: {
         Row: {
@@ -308,6 +330,9 @@ export interface Database {
           content?: string
           context?: string | null
         }
+        Relationships: [
+          { foreignKeyName: 'key_decisions_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+        ]
       }
       risks: {
         Row: {
@@ -334,6 +359,9 @@ export interface Database {
           content?: string
           severity?: RiskSeverity
         }
+        Relationships: [
+          { foreignKeyName: 'risks_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+        ]
       }
       participants: {
         Row: {
@@ -360,6 +388,9 @@ export interface Database {
           email?: string | null
           role?: string | null
         }
+        Relationships: [
+          { foreignKeyName: 'participants_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+        ]
       }
       follow_up_questions: {
         Row: {
@@ -386,6 +417,9 @@ export interface Database {
           question?: string
           answered?: boolean
         }
+        Relationships: [
+          { foreignKeyName: 'follow_up_questions_meeting_id_fkey'; columns: ['meeting_id']; referencedRelation: 'meetings'; referencedColumns: ['id'] },
+        ]
       }
     }
     Views: Record<string, never>
