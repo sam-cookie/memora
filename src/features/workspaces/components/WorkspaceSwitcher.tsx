@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface WorkspaceSwitcherProps {
   collapsed: boolean
-  onClose?: () => void
+  onClose?: (() => void) | undefined
 }
 
 export function WorkspaceSwitcher({ collapsed, onClose }: WorkspaceSwitcherProps) {

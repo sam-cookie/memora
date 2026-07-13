@@ -10,7 +10,7 @@ import { ChatMessage } from './ChatMessage'
 
 interface ChatPanelProps {
   contextString: string
-  meetingTitle?: string
+  meetingTitle?: string | undefined
   toolHandlers?: ToolHandlers
   onClose: () => void
 }

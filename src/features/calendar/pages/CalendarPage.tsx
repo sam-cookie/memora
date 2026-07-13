@@ -47,14 +47,6 @@ function formatTime(iso: string) {
   })
 }
 
-function formatDayHeading(date: Date) {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
 
 // ─── Calendar grid builder ────────────────────────────────────────────────────
 

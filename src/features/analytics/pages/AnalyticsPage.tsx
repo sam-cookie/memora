@@ -1,6 +1,5 @@
 import { BarChart2 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { TooltipProps } from 'recharts'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -50,7 +49,13 @@ const GRID_STROKE = 'hsl(var(--border))'
 
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) {
+interface ChartTooltipProps {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: number; color?: string }>
+  label?: string
+}
+
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">

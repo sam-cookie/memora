@@ -6,7 +6,7 @@ interface FormFieldProps {
   id: string
   label?: string
   description?: string
-  error?: string
+  error?: string | undefined
   required?: boolean
   children: ReactNode
   className?: string

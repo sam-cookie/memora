@@ -37,11 +37,7 @@ const PRIORITY_ORDER: Record<ActionItemPriority, number> = {
   low: 3,
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 

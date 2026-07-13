@@ -8,9 +8,9 @@ export interface ActionItemWithMeeting extends ActionItem {
 export interface CreateActionItemData {
   meeting_id: string
   content: string
-  assignee?: string
-  priority?: ActionItemPriority
-  due_date?: string
+  assignee?: string | undefined
+  priority?: ActionItemPriority | undefined
+  due_date?: string | undefined
 }
 
 export interface UpdateActionItemData {
@@ -65,10 +65,11 @@ export const actionItemsService = {
   },
 
   async update(id: string, data: UpdateActionItemData): Promise<void> {
+    const { due_date: rawDueDate, assignee: rawAssignee, ...rest } = data
     const sanitized = {
-      ...data,
-      due_date: data.due_date === '' ? null : data.due_date,
-      assignee: data.assignee === '' ? null : data.assignee,
+      ...rest,
+      ...(rawDueDate !== undefined ? { due_date: rawDueDate === '' ? null : rawDueDate } : {}),
+      ...(rawAssignee !== undefined ? { assignee: rawAssignee === '' ? null : rawAssignee } : {}),
     }
     const { error } = await supabase
       .from('action_items')

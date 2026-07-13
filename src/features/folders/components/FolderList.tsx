@@ -51,7 +51,7 @@ function FolderItem({ folder, isSelected, isHovered, count, onSelect }: FolderIt
             isHovered && 'ring-2 ring-primary ring-inset bg-primary/10 text-primary',
           )}
         >
-          <Folder className={cn('h-3.5 w-3.5 shrink-0', colorConfig.iconClass)} />
+          <Folder className={cn('h-3.5 w-3.5 shrink-0', colorConfig?.iconClass)} />
           <span className="flex-1 truncate leading-none">{folder.name}</span>
           <span
             className={cn(

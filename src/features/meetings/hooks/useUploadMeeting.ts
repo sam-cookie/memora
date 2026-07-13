@@ -25,7 +25,7 @@ interface UploadState {
 
 interface UploadInput {
   title: string
-  description?: string
+  description?: string | undefined
   participants?: ParticipantEntry[]
   meetingDate?: string
   file: File

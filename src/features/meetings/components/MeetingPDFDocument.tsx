@@ -937,7 +937,7 @@ function LegacyDocument({
                   <Text style={s.tableHeadText}>Priority</Text>
                 </View>
               </View>
-              {actionItems.map((item, i) => (
+              {actionItems.map((item) => (
                 <View key={item.id} style={s.tableRow}>
                   <View style={s.colCheck}>
                     <View style={[s.checkBox, item.completed ? s.checkBoxDone : {}]}>
@@ -981,7 +981,7 @@ function LegacyDocument({
 
         {risks.length > 0 && (
           <Section title="Risks & Blockers" count={risks.length}>
-            {risks.map((r, i) => (
+            {risks.map((r) => (
               <View key={r.id} style={s.riskItem}>
                 <View style={s.riskItemHead}>
                   <Text style={s.riskTitle}>{r.content}</Text>

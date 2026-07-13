@@ -3,7 +3,7 @@ const GROQ_BASE = 'https://api.groq.com/openai/v1'
 export interface ApiMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string | null
-  tool_call_id?: string
+  tool_call_id?: string | undefined
   tool_calls?: AssistantToolCall[]
 }
 

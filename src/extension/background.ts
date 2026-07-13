@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener(
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response: GetTabStreamIdResponse) => void,
   ) => {
-    if (!message || typeof message !== 'object') return
+    if (!message || typeof message !== 'object') return false
 
     const msg = message as Record<string, unknown>
 
@@ -47,5 +47,6 @@ chrome.runtime.onMessage.addListener(
       })
       return true // keep message channel open for async response
     }
+    return false
   },
 )

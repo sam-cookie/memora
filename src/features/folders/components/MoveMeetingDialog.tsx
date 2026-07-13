@@ -73,7 +73,7 @@ export function MoveMeetingDialog({
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                   )}
                 >
-                  <Folder className={cn('h-3.5 w-3.5 shrink-0', colorConfig.iconClass)} />
+                  <Folder className={cn('h-3.5 w-3.5 shrink-0', colorConfig?.iconClass)} />
                   <span className="truncate">{folder.name}</span>
                 </button>
               </li>
