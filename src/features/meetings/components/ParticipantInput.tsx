@@ -31,7 +31,8 @@ export function ParticipantInput({ value, onChange, disabled }: ParticipantInput
     }
     // Backspace on empty input removes the last chip
     if (e.key === 'Backspace' && !draft && value.length > 0) {
-      remove(value[value.length - 1])
+      const last = value[value.length - 1]
+      if (last) remove(last)
     }
   }
 

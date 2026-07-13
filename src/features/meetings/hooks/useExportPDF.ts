@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import { createElement } from 'react'
+import type { DocumentProps } from '@react-pdf/renderer'
+import type { ReactElement } from 'react'
 import { MeetingPDFDocument } from '../components/MeetingPDFDocument'
 import type { Meeting, ActionItem, KeyDecision, Risk, FollowUpQuestion } from '@/types/database'
 
@@ -18,7 +20,7 @@ export function useExportPDF() {
   async function exportPDF(args: ExportPDFArgs) {
     setIsExporting(true)
     try {
-      const element = createElement(MeetingPDFDocument, args)
+      const element = createElement(MeetingPDFDocument, args) as ReactElement<DocumentProps>
       const blob = await pdf(element).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

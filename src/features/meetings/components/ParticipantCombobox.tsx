@@ -166,7 +166,8 @@ export function ParticipantCombobox({ value, onChange, disabled }: ParticipantCo
 
       case 'Backspace':
         if (!query && value.length > 0) {
-          remove(value[value.length - 1].name)
+          const last = value[value.length - 1]
+          if (last) remove(last.name)
         }
         break
     }

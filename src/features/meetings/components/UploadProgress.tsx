@@ -32,7 +32,7 @@ export function UploadProgress({ phase, uploadProgress }: UploadProgressProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        {STEPS.map((step, i) => {
+        {STEPS.map((step) => {
           const stepIndex = phaseIndex(step.phase)
           const isComplete = currentIndex > stepIndex
           const isActive = currentIndex === stepIndex

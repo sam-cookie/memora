@@ -113,7 +113,7 @@ export function NewMeetingForm({ onSuccess, onCancel, isDialog = false }: NewMee
 
       {/* Date & time */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField id="meeting_date" label="Date & time" error={errors.meeting_date?.message}>
+        <FormField id="meeting_date" label="Date & time" {...(errors.meeting_date?.message ? { error: errors.meeting_date.message } : {})}>
           <Input
             id="meeting_date"
             type="datetime-local"
@@ -153,7 +153,7 @@ export function NewMeetingForm({ onSuccess, onCancel, isDialog = false }: NewMee
         <p className="text-sm font-medium">
           File <span className="text-destructive" aria-hidden="true">*</span>
         </p>
-        <FileDropzone value={file} onChange={setFile} error={fileError ?? undefined} />
+        <FileDropzone value={file} onChange={setFile} {...(fileError ? { error: fileError } : {})} />
       </div>
 
       {/* Error state */}
