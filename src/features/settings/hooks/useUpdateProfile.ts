@@ -18,7 +18,7 @@ export function useUpdateProfile() {
         avatarUrl = await profileService.uploadAvatar(user.id, avatarFile)
       }
 
-      await profileService.updateProfile({ fullName, avatarUrl })
+      await profileService.updateProfile({ fullName, ...(avatarUrl !== undefined ? { avatarUrl } : {}) })
     },
   })
 }

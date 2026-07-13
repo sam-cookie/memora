@@ -53,13 +53,10 @@ export const meetingsService = {
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true,
-        onUploadProgress: (progress) => {
-          const percent = Math.round((progress.loaded / progress.total) * 100)
-          onProgress(percent)
-        },
       })
 
     if (error) throw new Error(error.message)
+    onProgress(100)
     return { ...data, filePath }
   },
 

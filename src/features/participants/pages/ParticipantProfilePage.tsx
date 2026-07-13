@@ -24,7 +24,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/common/EmptyState'
-import { PageHeader } from '@/components/common/PageHeader'
 import { ROUTES } from '@/config/routes'
 import { generateInitials } from '@/lib/utils'
 import {
@@ -251,7 +250,7 @@ export function ParticipantProfilePage() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Meetings" value={meetings.length} />
-          <StatCard label="Action Items" value={actionItems.length} sub={completedActions > 0 ? `${completedActions} done` : undefined} />
+          <StatCard label="Action Items" value={actionItems.length} {...(completedActions > 0 ? { sub: `${completedActions} done` } : {})} />
           <StatCard
             label="Completion"
             value={completionRate !== null ? `${completionRate}%` : '—'}

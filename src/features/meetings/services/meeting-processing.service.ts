@@ -53,7 +53,7 @@ export const meetingProcessingService = {
     })
 
     // Insert related records; skip empty arrays to avoid no-op DB calls
-    const saves: Promise<unknown>[] = []
+    const saves: PromiseLike<unknown>[] = []
 
     if (analysis.actionItems.length > 0) {
       saves.push(
