@@ -251,7 +251,7 @@ export function ReviewParticipantsPanel({
   const linkedCount = Object.values(selections).filter(Boolean).length
 
   return (
-    <section className="rounded-xl border border-primary/20 bg-primary/5 shadow-sm overflow-hidden">
+    <section className="rounded-xl border border-primary/20 bg-primary/5 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-primary/10">
         <div className="flex items-center gap-2.5">

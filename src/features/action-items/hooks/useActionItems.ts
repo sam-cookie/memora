@@ -14,6 +14,36 @@ export function useAllActionItems() {
   })
 }
 
+export function useUpdateActionItem() {
+  const queryClient = useQueryClient()
+  const { activeWorkspace } = useWorkspace()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: import('../services/actionItems.service').UpdateActionItemData }) =>
+      actionItemsService.update(id, data),
+    onMutate: async ({ id, data }) => {
+      const key = ['action-items', activeWorkspace?.id]
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData(key)
+      queryClient.setQueryData(
+        key,
+        (old: Awaited<ReturnType<typeof actionItemsService.getAll>> | undefined) =>
+          old?.map((item) => (item.id === id ? { ...item, ...data } : item)) ?? [],
+      )
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['action-items', activeWorkspace?.id], context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['action-items', activeWorkspace?.id] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
 export function useToggleActionItem() {
   const queryClient = useQueryClient()
   const { activeWorkspace } = useWorkspace()

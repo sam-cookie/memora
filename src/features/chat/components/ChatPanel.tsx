@@ -4,12 +4,14 @@ import { ArrowUp, GripHorizontal, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useChat } from '../hooks/useChat'
 import { useDragResize, type ResizeDir } from '../hooks/useDragResize'
+import type { ToolHandlers } from '../hooks/useActionItemTools'
 import { MemoAvatar } from './MemoAvatar'
 import { ChatMessage } from './ChatMessage'
 
 interface ChatPanelProps {
   contextString: string
   meetingTitle?: string
+  toolHandlers?: ToolHandlers
   onClose: () => void
 }
 
@@ -62,9 +64,9 @@ function ResizeHandle({ dir, onMouseDown }: ResizeHandleProps) {
 const INITIAL_W = 380
 const INITIAL_H = 520
 
-export function ChatPanel({ contextString, meetingTitle, onClose }: ChatPanelProps) {
+export function ChatPanel({ contextString, meetingTitle, toolHandlers, onClose }: ChatPanelProps) {
   const { pos, size, startDrag, startResize } = useDragResize(INITIAL_W, INITIAL_H)
-  const { messages, isStreaming, sendMessage, clearMessages } = useChat()
+  const { messages, isStreaming, sendMessage, clearMessages } = useChat(toolHandlers)
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -176,13 +178,15 @@ export function ChatPanel({ contextString, meetingTitle, onClose }: ChatPanelPro
             </div>
           </div>
         ) : (
-          messages.map((msg, i) => (
-            <ChatMessage
-              key={msg.id}
-              message={msg}
-              isStreaming={isStreaming && i === messages.length - 1}
-            />
-          ))
+          messages
+            .filter((msg) => msg.role !== 'tool')
+            .map((msg, i, arr) => (
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                isStreaming={isStreaming && i === arr.length - 1}
+              />
+            ))
         )}
         <div ref={bottomRef} />
       </div>

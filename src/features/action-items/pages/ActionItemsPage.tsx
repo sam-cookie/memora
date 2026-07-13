@@ -1,23 +1,21 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckSquare,
   Check,
-  ArrowRight,
   Search,
   ChevronRight,
   ListChecks,
+  Pencil,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ROUTES } from '@/config/routes'
 import { cn } from '@/lib/utils'
-import { useAllActionItems, useToggleActionItem } from '../hooks/useActionItems'
+import { useAllActionItems, useToggleActionItem, useUpdateActionItem } from '../hooks/useActionItems'
 import type { ActionItemPriority } from '@/types/database'
 import type { ActionItemWithMeeting } from '../services/actionItems.service'
 
@@ -25,14 +23,11 @@ import type { ActionItemWithMeeting } from '../services/actionItems.service'
 
 type Filter = 'all' | 'open' | 'completed'
 
-const PRIORITY_VARIANT: Record<
-  ActionItemPriority,
-  'secondary' | 'warning' | 'destructive' | 'default'
-> = {
-  low: 'secondary',
-  medium: 'warning',
-  high: 'destructive',
-  critical: 'destructive',
+const PRIORITY_CLASSES: Record<ActionItemPriority, string> = {
+  low: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  medium: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+  high: 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400',
+  critical: 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400',
 }
 
 const PRIORITY_ORDER: Record<ActionItemPriority, number> = {
@@ -81,6 +76,43 @@ interface ActionItemRowProps {
 
 function ActionItemRow({ item, index }: ActionItemRowProps) {
   const toggle = useToggleActionItem()
+  const update = useUpdateActionItem()
+
+  const [editingField, setEditingField] = useState<'content' | 'assignee' | null>(null)
+  const [draftContent, setDraftContent] = useState(item.content)
+  const [draftAssignee, setDraftAssignee] = useState(item.assignee ?? '')
+  const contentRef = useRef<HTMLInputElement>(null)
+  const assigneeRef = useRef<HTMLInputElement>(null)
+
+  const startEdit = (field: 'content' | 'assignee') => {
+    if (item.completed) return
+    if (field === 'content') setDraftContent(item.content)
+    if (field === 'assignee') setDraftAssignee(item.assignee ?? '')
+    setEditingField(field)
+  }
+
+  const saveContent = () => {
+    const trimmed = draftContent.trim()
+    if (!trimmed) { setDraftContent(item.content); setEditingField(null); return }
+    if (trimmed !== item.content) update.mutate({ id: item.id, data: { content: trimmed } })
+    setEditingField(null)
+  }
+
+  const saveAssignee = () => {
+    const next = draftAssignee.trim() || null
+    if (next !== item.assignee) update.mutate({ id: item.id, data: { assignee: next } })
+    setEditingField(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent, save: () => void) => {
+    if (e.key === 'Enter') { e.preventDefault(); save() }
+    if (e.key === 'Escape') setEditingField(null)
+  }
+
+  const handlePriority = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const p = e.target.value as ActionItemPriority
+    if (p !== item.priority) update.mutate({ id: item.id, data: { priority: p } })
+  }
 
   return (
     <motion.li
@@ -89,8 +121,9 @@ function ActionItemRow({ item, index }: ActionItemRowProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ delay: index * 0.03, duration: 0.2 }}
-      className="flex items-start gap-3 rounded-lg border border-border/60 bg-card px-4 py-3 shadow-sm"
+      className="group flex items-start gap-3 rounded-lg border border-border/60 bg-card px-4 py-3 shadow-sm"
     >
+      {/* Checkbox */}
       <button
         type="button"
         aria-label={item.completed ? 'Mark incomplete' : 'Mark complete'}
@@ -106,21 +139,89 @@ function ActionItemRow({ item, index }: ActionItemRowProps) {
       </button>
 
       <div className="min-w-0 flex-1 space-y-1.5">
-        <p
-          className={cn(
-            'text-sm leading-snug',
-            item.completed ? 'line-through text-muted-foreground' : 'text-foreground',
-          )}
-        >
-          {item.content}
-        </p>
+        {/* Content */}
+        {editingField === 'content' ? (
+          <input
+            ref={contentRef}
+            autoFocus
+            value={draftContent}
+            onChange={(e) => setDraftContent(e.target.value)}
+            onBlur={saveContent}
+            onKeyDown={(e) => handleKeyDown(e, saveContent)}
+            className="w-full text-sm bg-transparent border-b border-primary outline-none text-foreground py-0.5"
+            aria-label="Edit action item"
+          />
+        ) : (
+          <div className="flex items-start gap-1.5">
+            <p
+              className={cn(
+                'flex-1 text-sm leading-snug',
+                item.completed ? 'line-through text-muted-foreground' : 'text-foreground',
+                !item.completed && 'cursor-text',
+              )}
+              onClick={() => startEdit('content')}
+            >
+              {item.content}
+            </p>
+            {!item.completed && (
+              <Pencil
+                className="h-3 w-3 shrink-0 mt-0.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => startEdit('content')}
+                aria-label="Edit content"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Meta row */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={PRIORITY_VARIANT[item.priority]} className="text-xs">
-            {capitalize(item.priority)}
-          </Badge>
-          {item.assignee && (
-            <span className="text-xs text-muted-foreground">→ {item.assignee}</span>
+          {/* Priority */}
+          <select
+            value={item.priority}
+            onChange={handlePriority}
+            disabled={item.completed || update.isPending}
+            aria-label="Priority"
+            className={cn(
+              'text-[10px] font-semibold rounded px-1.5 py-0.5 border-0 outline-none cursor-pointer transition-colors disabled:cursor-default',
+              PRIORITY_CLASSES[item.priority],
+            )}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+
+          {/* Assignee */}
+          {editingField === 'assignee' ? (
+            <input
+              ref={assigneeRef}
+              autoFocus
+              value={draftAssignee}
+              onChange={(e) => setDraftAssignee(e.target.value)}
+              onBlur={saveAssignee}
+              onKeyDown={(e) => handleKeyDown(e, saveAssignee)}
+              placeholder="Assignee name…"
+              className="text-xs bg-transparent border-b border-primary outline-none text-foreground w-32 py-0.5"
+              aria-label="Edit assignee"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => startEdit('assignee')}
+              disabled={item.completed}
+              className={cn(
+                'text-xs transition-colors disabled:cursor-default',
+                item.assignee
+                  ? 'text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-muted-foreground',
+              )}
+            >
+              {item.assignee ? `→ ${item.assignee}` : '+ Assignee'}
+            </button>
           )}
+
+          {/* Due date (read-only) */}
           {item.due_date && (
             <span className="text-xs text-muted-foreground">
               Due{' '}

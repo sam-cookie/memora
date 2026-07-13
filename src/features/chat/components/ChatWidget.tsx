@@ -4,7 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bot, X } from 'lucide-react'
 import { meetingsService } from '@/features/meetings/services/meetings.service'
+import {
+  useDashboardStats,
+  useAllActionItems,
+  useRecentDecisions,
+} from '@/features/dashboard/hooks/useDashboard'
+import { useMeetings } from '@/features/meetings/hooks/useMeetings'
 import type { Database } from '@/types/database'
+import type { DashboardStats, ActionItemWithMeeting, RecentDecision } from '@/features/dashboard/services/dashboard.service'
+import { useActionItemTools } from '../hooks/useActionItemTools'
 import { ChatPanel } from './ChatPanel'
 
 type Meeting = Database['public']['Tables']['meetings']['Row']
@@ -20,6 +28,7 @@ function buildMeetingContext(
 ): string {
   const lines: string[] = ['CURRENT MEETING CONTEXT', '']
 
+  lines.push(`Meeting ID: ${meeting.id}`)
   lines.push(`Title: ${meeting.title}`)
   if (meeting.meeting_date) {
     lines.push(
@@ -48,7 +57,7 @@ function buildMeetingContext(
     lines.push(`Action Items (${actionItems.length}):`)
     actionItems.forEach((a) => {
       const status = a.completed ? 'completed' : 'open'
-      lines.push(`• ${a.content} — ${a.assignee ?? 'unassigned'} · ${a.priority} · ${status}`)
+      lines.push(`• [id:${a.id}] ${a.content} — ${a.assignee ?? 'unassigned'} · ${a.priority} · ${status}`)
     })
     lines.push('')
   }
@@ -78,11 +87,73 @@ function buildMeetingContext(
   return lines.join('\n')
 }
 
-const GENERAL_CONTEXT = `GENERAL CONTEXT
+function buildDashboardContext(
+  stats: DashboardStats,
+  allMeetings: Meeting[],
+  allActionItems: ActionItemWithMeeting[],
+  recentDecisions: RecentDecision[],
+): string {
+  const lines: string[] = ['DASHBOARD CONTEXT', '']
 
-The user is viewing their Memora dashboard. You have no specific meeting open right now.
-Help them navigate their meeting history, understand patterns, or answer general questions about the application.
-If they ask about a specific meeting, suggest they open that meeting and ask you there for richer context.`
+  lines.push('## Stats')
+  lines.push(`• Total meetings: ${stats.totalMeetings}`)
+  lines.push(`• Completed meetings: ${stats.completedMeetings}`)
+  lines.push(`• Open action items: ${stats.openActionItems}`)
+  lines.push(`• Total action items: ${stats.totalActionItems}`)
+  lines.push('')
+
+  if (allMeetings.length > 0) {
+    lines.push(`## All Meetings (${allMeetings.length})`)
+    allMeetings.forEach((m) => {
+      const date = m.meeting_date
+        ? new Date(m.meeting_date).toLocaleDateString('en-US', { dateStyle: 'medium' })
+        : 'no date'
+      const participants = m.participants && m.participants.length > 0
+        ? m.participants.join(', ')
+        : 'none listed'
+      lines.push(`• [id:${m.id}] ${m.title} — ${date} — ${m.status} — participants: ${participants}`)
+    })
+    lines.push('')
+  }
+
+  const openItems = allActionItems.filter((a) => !a.completed)
+  const completedItems = allActionItems.filter((a) => a.completed)
+
+  if (openItems.length > 0) {
+    lines.push(`## Open Action Items (${openItems.length})`)
+    openItems.forEach((a) => {
+      const meeting = a.meetings?.title ?? 'unknown meeting'
+      const due = a.due_date
+        ? new Date(a.due_date).toLocaleDateString('en-US', { dateStyle: 'medium' })
+        : 'no due date'
+      lines.push(`• [id:${a.id}] [meeting_id:${a.meeting_id}] [${a.priority}] ${a.content} — ${a.assignee ?? 'unassigned'} · due ${due} · from "${meeting}"`)
+    })
+    lines.push('')
+  } else {
+    lines.push('## Open Action Items\nNone.')
+    lines.push('')
+  }
+
+  if (completedItems.length > 0) {
+    lines.push(`## Completed Action Items (${completedItems.length})`)
+    completedItems.forEach((a) => {
+      const meeting = a.meetings?.title ?? 'unknown meeting'
+      lines.push(`• [id:${a.id}] [meeting_id:${a.meeting_id}] [${a.priority}] ${a.content} — ${a.assignee ?? 'unassigned'} · from "${meeting}"`)
+    })
+    lines.push('')
+  }
+
+  if (recentDecisions.length > 0) {
+    lines.push('## Recent Decisions')
+    recentDecisions.forEach((d) => {
+      const meeting = d.meetings?.title ?? 'unknown meeting'
+      lines.push(`• ${d.content} — from "${meeting}"`)
+    })
+    lines.push('')
+  }
+
+  return lines.join('\n')
+}
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
@@ -90,6 +161,7 @@ export function ChatWidget() {
   const match = useMatch('/meetings/:id')
   const meetingId = match?.params['id']
 
+  // Meeting-scoped data (only when viewing a specific meeting)
   const { data: meeting } = useQuery({
     queryKey: ['meeting', meetingId],
     queryFn: () => meetingsService.getMeeting(meetingId!),
@@ -118,12 +190,23 @@ export function ChatWidget() {
     staleTime: 5 * 60 * 1000,
   })
 
+  // Dashboard-wide data (always fetched for global context)
+  const { data: stats } = useDashboardStats()
+  const { data: allMeetings = [] } = useMeetings()
+  const { data: allActionItems = [] } = useAllActionItems()
+  const { data: recentDecisions = [] } = useRecentDecisions()
+
+  const { handlers } = useActionItemTools(meetingId)
+
   const contextString = useMemo(() => {
     if (meeting) {
       return buildMeetingContext(meeting, actionItems, decisions, risks)
     }
-    return GENERAL_CONTEXT
-  }, [meeting, actionItems, decisions, risks])
+    if (stats) {
+      return buildDashboardContext(stats, allMeetings, allActionItems, recentDecisions)
+    }
+    return 'CONTEXT\n\nLoading your dashboard data…'
+  }, [meeting, actionItems, decisions, risks, stats, allMeetings, allActionItems, recentDecisions])
 
   return (
     <>
@@ -132,6 +215,7 @@ export function ChatWidget() {
           <ChatPanel
             contextString={contextString}
             meetingTitle={meeting?.title}
+            toolHandlers={handlers}
             onClose={() => setIsOpen(false)}
           />
         )}

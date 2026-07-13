@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage as ChatMessageType } from '../types'
 import { MemoAvatar } from './MemoAvatar'
@@ -67,9 +68,16 @@ export function ChatMessage({ message, isStreaming, className }: ChatMessageProp
     <div className={cn('flex items-start gap-2.5 px-4', className)}>
       <MemoAvatar size="sm" className="mt-0.5 shrink-0" />
       <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
-        {message.content ? (
+        {message.loading ? (
+          // Tool is executing — spinner + label
+          <span className="inline-flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+            <span className="italic">{message.content}</span>
+          </span>
+        ) : message.content ? (
           renderContent(message.content)
         ) : isStreaming ? (
+          // Waiting for first token
           <span className="inline-flex items-center gap-1 py-0.5">
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-foreground/40 [animation-delay:-0.3s]" />
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-foreground/40 [animation-delay:-0.15s]" />
