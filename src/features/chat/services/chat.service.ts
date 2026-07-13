@@ -1,5 +1,3 @@
-const GROQ_BASE = 'https://api.groq.com/openai/v1'
-
 export interface ApiMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string | null
@@ -95,12 +93,6 @@ interface StreamChunk {
   }>
 }
 
-function getApiKey(): string {
-  const key = import.meta.env.VITE_GROQ_API_KEY as string | undefined
-  if (!key) throw new Error('VITE_GROQ_API_KEY is not set')
-  return key
-}
-
 async function* readSSE(res: Response): AsyncGenerator<string> {
   if (!res.body) throw new Error('Empty response from server')
   const reader = res.body.getReader()
@@ -136,12 +128,9 @@ export async function* streamCompletionWithTools(
     body['tool_choice'] = 'auto'
   }
 
-  const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+  const res = await fetch('/api/groq/chat', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${getApiKey()}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
 

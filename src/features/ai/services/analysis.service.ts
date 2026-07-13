@@ -1,13 +1,5 @@
 import type { MeetingAnalysis } from '../types'
 
-const GROQ_BASE = 'https://api.groq.com/openai/v1'
-
-function getApiKey(): string {
-  const key = import.meta.env.VITE_GROQ_API_KEY as string | undefined
-  if (!key) throw new Error('VITE_GROQ_API_KEY is not set')
-  return key
-}
-
 const SYSTEM_PROMPT = `You are a senior project manager and expert meeting facilitator. Analyze the meeting transcript and extract structured intelligence that will be immediately useful to stakeholders and team leads.
 
 Return ONLY a valid JSON object matching this exact schema — no markdown fences, no explanation, no extra text:
@@ -102,12 +94,9 @@ interface ChatCompletionResponse {
 /** Analyzes a meeting transcript using Groq and returns structured data. */
 export const analysisService = {
   async analyze(transcript: string): Promise<MeetingAnalysis> {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await fetch('/api/groq/chat', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${getApiKey()}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [

@@ -1,12 +1,4 @@
-const GROQ_BASE = 'https://api.groq.com/openai/v1'
-
-function getApiKey(): string {
-  const key = import.meta.env.VITE_GROQ_API_KEY as string | undefined
-  if (!key) throw new Error('VITE_GROQ_API_KEY is not set')
-  return key
-}
-
-/** Transcribes a meeting file. Audio files use Groq Whisper; text files are read directly. */
+/** Transcribes a meeting file. Audio files use Groq Whisper via server proxy; text files are read directly. */
 export const transcriptionService = {
   async transcribe(file: File): Promise<string> {
     if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
@@ -18,9 +10,8 @@ export const transcriptionService = {
     body.append('model', 'whisper-large-v3')
     body.append('response_format', 'text')
 
-    const res = await fetch(`${GROQ_BASE}/audio/transcriptions`, {
+    const res = await fetch('/api/groq/transcribe', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${getApiKey()}` },
       body,
     })
 
