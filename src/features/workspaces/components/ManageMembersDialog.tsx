@@ -40,7 +40,7 @@ interface ManageMembersDialogProps {
 
 export function ManageMembersDialog({ workspace, open, onOpenChange }: ManageMembersDialogProps) {
   const { user } = useAuth()
-  const { isOwner, isAdminOrOwner, activeWorkspaceRole } = useWorkspace()
+  const { isOwner, isAdminOrOwner } = useWorkspace()
   const [email, setEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<WorkspaceRole>('member')
   const [inviteError, setInviteError] = useState<string | null>(null)

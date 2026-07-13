@@ -103,7 +103,7 @@ export function SettingsPage() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     updateProfile(
-      { fullName, avatarFile: avatarFile ?? undefined },
+      { fullName, ...(avatarFile ? { avatarFile } : {}) },
       {
         onSuccess: () => {
           setSaved(true)
@@ -137,7 +137,7 @@ export function SettingsPage() {
             {/* Avatar */}
             <div className="flex items-center gap-5">
               <AvatarUpload
-                currentUrl={currentAvatarUrl}
+                {...(currentAvatarUrl !== undefined ? { currentUrl: currentAvatarUrl } : {})}
                 preview={avatarPreview}
                 displayName={fullName || user?.email || ''}
                 onFileSelect={handleAvatarSelect}

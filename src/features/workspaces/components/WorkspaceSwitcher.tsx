@@ -28,8 +28,6 @@ export function WorkspaceSwitcher({ collapsed, onClose }: WorkspaceSwitcherProps
 
   if (!activeWorkspace) return null
 
-  const colorEntry = WORKSPACE_COLORS.find((c) => c.value === activeWorkspace.color) ?? WORKSPACE_COLORS[1]
-
   const trigger = (
     <DropdownMenuTrigger asChild>
       <button
@@ -80,7 +78,7 @@ export function WorkspaceSwitcher({ collapsed, onClose }: WorkspaceSwitcherProps
           className="w-56"
         >
           {workspaces.map((ws) => {
-            const wsColor = WORKSPACE_COLORS.find((c) => c.value === ws.color) ?? WORKSPACE_COLORS[1]
+            const wsColor = WORKSPACE_COLORS.find((c) => c.value === ws.color) ?? WORKSPACE_COLORS[0]
             return (
               <DropdownMenuItem
                 key={ws.id}
@@ -90,7 +88,7 @@ export function WorkspaceSwitcher({ collapsed, onClose }: WorkspaceSwitcherProps
                   onClose?.()
                 }}
               >
-                <div className={cn('h-5 w-5 rounded-md flex items-center justify-center text-xs shrink-0', wsColor.bgClass, wsColor.textClass)}>
+                <div className={cn('h-5 w-5 rounded-md flex items-center justify-center text-xs shrink-0', wsColor?.bgClass, wsColor?.textClass)}>
                   {ws.icon ?? ws.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="flex-1 truncate text-sm">{ws.name}</span>

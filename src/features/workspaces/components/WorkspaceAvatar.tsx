@@ -15,7 +15,8 @@ const SIZE_CLASSES = {
 }
 
 export function WorkspaceAvatar({ workspace, size = 'md', className }: WorkspaceAvatarProps) {
-  const colorEntry = WORKSPACE_COLORS.find((c) => c.value === workspace.color) ?? WORKSPACE_COLORS[1]
+  const colorEntry = WORKSPACE_COLORS.find((c) => c.value === workspace.color) ?? WORKSPACE_COLORS[0]
+  if (!colorEntry) return null
 
   return (
     <div

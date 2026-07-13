@@ -78,7 +78,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (workspaces.length === 0) return
     if (!activeWorkspaceId || !workspaces.find((w) => w.id === activeWorkspaceId)) {
-      const fallback = workspaces[0].id
+      const fallback = workspaces[0]?.id
+      if (!fallback) return
       setActiveWorkspaceId(fallback)
       localStorage.setItem(STORAGE_KEY, fallback)
     }
