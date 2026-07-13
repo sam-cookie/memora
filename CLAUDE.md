@@ -46,8 +46,8 @@ The goal is to build a production-ready SaaS application that demonstrates moder
 
 ## AI
 
-- OpenAI Responses API
-- Whisper API (or another transcription service)
+- Groq AI API
+- Groq Whisper API (or another transcription service)
 
 ## Deployment
 

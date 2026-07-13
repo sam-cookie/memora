@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=flat&logo=supabase&logoColor=white" alt="Supabase" />
-  <img src="https://img.shields.io/badge/OpenAI-AI-412991?style=flat&logo=openai&logoColor=white" alt="OpenAI" />
+  <img src="https://img.shields.io/badge/Groq-AI-F55036?style=flat&logo=groq&logoColor=white" alt="Groq AI" />
 </p>
 
 ---
@@ -28,7 +28,7 @@ Memora turns the chaos of meetings into structured, retrievable information. Upl
 ### Meetings
 
 - Upload audio recordings or paste raw transcripts
-- Automatic transcription via OpenAI Whisper
+- Automatic transcription via Groq Whisper
 - AI-generated summaries, decisions, action items, risks, and follow-up questions
 - PDF export of full meeting notes
 - Folder organization with drag-and-drop management
@@ -90,7 +90,7 @@ Memora turns the chaos of meetings into structured, retrievable information. Upl
 | Charts        | Recharts                                  |
 | PDF           | @react-pdf/renderer                       |
 | Backend       | Supabase (Auth, PostgreSQL, Storage, RLS) |
-| AI            | OpenAI Responses API + Whisper            |
+| AI            | Groq AI API + Whisper                     |
 | Deployment    | Vercel                                    |
 
 ---
@@ -101,7 +101,7 @@ Memora turns the chaos of meetings into structured, retrievable information. Upl
 
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
-- An [OpenAI](https://platform.openai.com) API key
+- A [Groq](https://console.groq.com) API key
 
 ### Installation
 
@@ -121,7 +121,7 @@ Create a `.env.local` file in the project root:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_OPENAI_API_KEY=your_openai_api_key
+VITE_GROQ_API_KEY=your_groq_api_key
 ```
 
 ### Development
