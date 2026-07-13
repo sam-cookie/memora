@@ -204,7 +204,7 @@ function makeBodyCell(children: Paragraph[], width: number, last = false): Table
 }
 
 function premiumActionItemsTable(aiItems: MeetingAnalysis['actionItems'], dbItems: ActionItem[]): Table {
-  const W = [5, 44, 21, 15, 15]
+  const W = [5, 44, 21, 15, 15] as const
 
   const headerRow = new TableRow({
     children: [
@@ -277,7 +277,7 @@ function premiumActionItemsTable(aiItems: MeetingAnalysis['actionItems'], dbItem
 }
 
 function legacyActionItemsTable(items: ActionItem[]): Table {
-  const W = [5, 52, 25, 18]
+  const W = [5, 52, 25, 18] as const
 
   const headerRow = new TableRow({
     children: [
