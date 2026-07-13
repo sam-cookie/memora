@@ -60,6 +60,14 @@ export const meetingsService = {
     return { ...data, filePath }
   },
 
+  async getSignedUrl(filePath: string, expiresIn = 300): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('meeting-recordings')
+      .createSignedUrl(filePath, expiresIn)
+    if (error) throw new Error(error.message)
+    return data.signedUrl
+  },
+
   async getActionItems(meetingId: string) {
     const { data, error } = await supabase
       .from('action_items')

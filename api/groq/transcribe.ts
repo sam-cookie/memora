@@ -10,17 +10,33 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('GROQ_API_KEY not configured', { status: 500 })
   }
 
-  // Forward the raw multipart body preserving the Content-Type boundary
-  const contentType = req.headers.get('Content-Type') ?? ''
-  const body = await req.arrayBuffer()
+  // Accept a signed Supabase Storage URL so the audio file never passes through
+  // Vercel as a request body (Edge functions have a 4 MB payload limit).
+  // The Edge function fetches the file server-to-server — no payload limit applies.
+  const { signedUrl, filename, contentType } = (await req.json()) as {
+    signedUrl: string
+    filename: string
+    contentType: string
+  }
+
+  const fileRes = await fetch(signedUrl)
+  if (!fileRes.ok) {
+    return new Response(`Failed to fetch audio from storage: ${fileRes.status}`, { status: 502 })
+  }
+
+  const fileBuffer = await fileRes.arrayBuffer()
+  const effectiveType = contentType || fileRes.headers.get('Content-Type') || 'audio/mpeg'
+  const fileBlob = new Blob([fileBuffer], { type: effectiveType })
+
+  const form = new FormData()
+  form.append('file', fileBlob, filename)
+  form.append('model', 'whisper-large-v3')
+  form.append('response_format', 'text')
 
   const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': contentType,
-    },
-    body,
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
   })
 
   const text = await groqRes.text()

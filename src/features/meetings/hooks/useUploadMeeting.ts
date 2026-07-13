@@ -89,6 +89,7 @@ export function useUploadMeeting() {
           meetingId: meeting.id,
           userId: user.id,
           file,
+          filePath,
           participants: participantNames,
           onPhase: (phase: ProcessingPhase) =>
             setState((prev) => ({ ...prev, phase })),

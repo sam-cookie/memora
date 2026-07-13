@@ -11,6 +11,8 @@ interface ProcessOptions {
   meetingId: string
   userId: string
   file: File
+  /** Supabase Storage path for the uploaded file — used to generate a signed URL for server-side transcription. */
+  filePath: string
   /** User-provided participants merged with AI-extracted ones */
   participants?: string[]
   onPhase: (phase: ProcessingPhase) => void
@@ -21,14 +23,15 @@ interface ProcessOptions {
  * Updates the meeting status in the DB at each stage so the UI reflects real progress.
  */
 export const meetingProcessingService = {
-  async process({ meetingId, userId, file, participants = [], onPhase }: ProcessOptions): Promise<void> {
+  async process({ meetingId, userId, file, filePath, participants = [], onPhase }: ProcessOptions): Promise<void> {
     const setStatus = (status: MeetingStatus) =>
       meetingsService.updateMeeting(meetingId, { status })
 
     // --- 1. Transcribe ---
     onPhase('transcribing')
     await setStatus('transcribing')
-    const transcript = await transcriptionService.transcribe(file)
+    const signedUrl = await meetingsService.getSignedUrl(filePath)
+    const transcript = await transcriptionService.transcribe(file, signedUrl)
     await meetingsService.updateMeeting(meetingId, { transcript })
 
     // --- 2. Analyze ---

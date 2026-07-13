@@ -1,18 +1,14 @@
-/** Transcribes a meeting file. Audio files use Groq Whisper via server proxy; text files are read directly. */
+/** Transcribes a meeting file. Text files are read directly; audio is sent to Groq via a server proxy using a short-lived Supabase Storage signed URL. */
 export const transcriptionService = {
-  async transcribe(file: File): Promise<string> {
+  async transcribe(file: File, signedUrl: string): Promise<string> {
     if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
       return file.text()
     }
 
-    const body = new FormData()
-    body.append('file', file)
-    body.append('model', 'whisper-large-v3')
-    body.append('response_format', 'text')
-
     const res = await fetch('/api/groq/transcribe', {
       method: 'POST',
-      body,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signedUrl, filename: file.name, contentType: file.type }),
     })
 
     if (!res.ok) {
